@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TranscodeManager 控制台</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --surface: #1a1a1f;
+      --border: #2a2a32;
+      --text: #e4e4e7;
+      --muted: #71717a;
+      --accent: #22c55e;
+      --danger: #ef4444;
+      --warning: #eab308;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 1.5rem;
+      min-height: 100vh;
+    }
+    h1 { font-size: 1.25rem; margin-bottom: 1rem; color: var(--accent); }
+    h2 { font-size: 1rem; margin: 1rem 0 0.5rem; color: var(--muted); }
+    .api-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .api-bar button {
+      padding: 0.5rem 1rem;
+      background: #3f3f46;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .api-bar button:hover { background: #52525b; }
+    .api-bar button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .form-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .form-row label {
+      width: 80px;
+      flex-shrink: 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .form-row input, .form-row textarea {
+      flex: 1;
+      min-width: 180px;
+      padding: 0.5rem 0.75rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.875rem;
+    }
+    .form-row textarea { min-height: 60px; resize: vertical; }
+    .btn {
+      padding: 0.4rem 0.75rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+    }
+    .btn-primary { background: var(--accent); color: var(--bg); }
+    .btn-secondary { background: #3f3f46; color: var(--text); }
+    .btn-secondary:hover { background: #52525b; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-warning { background: var(--warning); color: var(--bg); }
+    .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+    .task-list { list-style: none; }
+    .task-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .task-item .info { flex: 1; min-width: 200px; }
+    .task-item .id { font-size: 0.75rem; color: var(--muted); }
+    .task-item .addr { font-size: 0.85rem; margin-top: 2px; }
+    .task-item .state {
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .state-running { background: rgba(34,197,94,0.2); color: var(--accent); }
+    .state-finished { background: rgba(113,113,122,0.3); color: var(--muted); }
+    .state-failed, .state-killed { background: rgba(239,68,68,0.2); color: var(--danger); }
+    .state-starting, .state-finishing { background: rgba(234,179,8,0.2); color: var(--warning); }
+    .task-item .actions { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-width: 90%;
+      width: 100%;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-body {
+      padding: 1rem;
+      overflow: auto;
+      font-size: 0.8rem;
+    }
+    .modal-body pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--muted);
+    }
+    .progress-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .progress-item { font-size: 0.8rem; }
+    .progress-item span { color: var(--muted); }
+    .log-line { margin: 2px 0; font-size: 0.75rem; }
+    .log-ts { color: var(--muted); margin-right: 0.5rem; }
+    .muted { color: var(--muted); }
+    .err { color: var(--danger); font-size: 0.85rem; margin-top: 0.5rem; }
+    .skills-version { color: var(--accent); margin-bottom: 0.5rem; }
+    .skills-section { margin-bottom: 1rem; }
+    .skills-section h4 { font-size: 0.9rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.3rem; font-size: 0.75rem; }
+    .skills-chip { background: var(--bg); padding: 0.2rem 0.4rem; border-radius: 4px; }
+    .skills-list { max-height: 200px; overflow-y: auto; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h1>TranscodeManager 控制台</h1>
+
+  <div class="api-bar card">
+    <button onclick="loadProcesses()">刷新列表</button>
+    <button onclick="loadSkills()">FFmpeg Skills</button>
+  </div>
+
+  <div class="card">
+    <h2><span id="formTitle">添加转码任务</span></h2>
+    <input type="hidden" id="editId" value="">
+    <div class="form-row">
+      <label>输入</label>
+      <input type="text" id="inputAddr" placeholder="file:///path/to/input.mp4 或 rtmp://...">
+    </div>
+    <div class="form-row">
+      <label>输入选项</label>
+      <input type="text" id="inputOptions" placeholder="-re -stream_loop -1 (可选，放在 -i 前)">
+    </div>
+    <div class="form-row">
+      <label>输出</label>
+      <input type="text" id="outputAddr" placeholder="/path/to/output.mp4 或 rtmp://...">
+    </div>
+    <div class="form-row">
+      <label>转码选项</label>
+      <input type="text" id="transcodeOptions" placeholder="-vcodec copy -acodec copy (音视频编解码，默认 -c:v libx264 -c:a aac)">
+    </div>
+    <div class="form-row">
+      <label>输出选项</label>
+      <input type="text" id="outputOptions" placeholder="-f flv (输出格式，可选)">
+    </div>
+    <div class="form-row">
+      <label></label>
+      <button class="btn btn-primary" id="submitBtn" onclick="submitProcess()">添加</button>
+      <button class="btn btn-secondary" id="cancelEditBtn" style="display:none" onclick="cancelEdit()">取消</button>
+    </div>
+  </div>
+
+  <h2>任务列表</h2>
+  <ul class="task-list" id="taskList"></ul>
+
+  <div id="modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="modalTitle">详情</span>
+        <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    function baseUrl() {
+      return (window.location.origin || '').replace(/\/$/, '');
+    }
+    function api(path, opts = {}) {
+      return fetch(baseUrl() + path, {
+        headers: { 'Content-Type': 'application/json', ...opts.headers },
+        ...opts
+      }).then(r => {
+        if (!r.ok) return r.json().then(j => { throw new Error(j.message || j.detail || r.statusText); });
+        const ct = r.headers.get('content-type');
+        if (ct && ct.includes('application/json')) return r.json();
+        return r.text();
+      });
+    }
+    function loadProcesses() {
+      api('/api/v3/process?filter=config,state')
+        .then(list => {
+          const ul = document.getElementById('taskList');
+          ul.innerHTML = '';
+          if (!list || list.length === 0) {
+            ul.innerHTML = '<li class="task-item">暂无任务</li>';
+            return;
+          }
+          list.forEach(p => {
+            const state = p.state?.exec || '-';
+            const inAddr = p.config?.input?.[0]?.address || '-';
+            const outAddr = p.config?.output?.[0]?.address || '-';
+            const li = document.createElement('li');
+            li.className = 'task-item';
+            li.innerHTML = `
+              <div class="info">
+                <div class="id">${p.id}</div>
+                <div class="addr">${inAddr} → ${outAddr}</div>
+              </div>
+              <span class="state state-${state}">${state}</span>
+              <div class="actions">
+                <button class="btn btn-sm btn-primary" onclick="cmd('${p.id}','start')">启动</button>
+                <button class="btn btn-sm btn-warning" onclick="cmd('${p.id}','stop')">停止</button>
+                <button class="btn btn-sm btn-secondary" onclick="cmd('${p.id}','restart')">重启</button>
+                <button class="btn btn-sm btn-secondary" onclick="showState('${p.id}')">状态</button>
+                <button class="btn btn-sm btn-secondary" onclick="showCommand('${p.id}')">命令</button>
+                <button class="btn btn-sm btn-secondary" onclick="showReport('${p.id}')">日志</button>
+                <button class="btn btn-sm btn-secondary" onclick="openEdit('${p.id}')">编辑</button>
+                <button class="btn btn-sm btn-danger" onclick="delProcess('${p.id}')">删除</button>
+              </div>
+            `;
+            ul.appendChild(li);
+          });
+        })
+        .catch(e => { document.getElementById('taskList').innerHTML = '<li class="task-item err">' + e.message + '</li>'; });
+    }
+    function parseOpts(s) {
+      return s ? s.trim().split(/\s+/).filter(Boolean) : [];
+    }
+    function getFormPayload() {
+      const inputAddr = document.getElementById('inputAddr').value.trim();
+      const outputAddr = document.getElementById('outputAddr').value.trim();
+      const inputOptions = parseOpts(document.getElementById('inputOptions').value);
+      const transcodeOptions = parseOpts(document.getElementById('transcodeOptions').value);
+      const outputOptions = parseOpts(document.getElementById('outputOptions').value);
+      const outputOpts = transcodeOptions.length ? transcodeOptions : ['-c:v', 'libx264', '-c:a', 'aac'];
+      if (outputOptions.length) outputOpts.push(...outputOptions);
+      return {
+        input: [{ address: inputAddr, options: inputOptions }],
+        output: [{ address: outputAddr, options: outputOpts }],
+        options: [],
+        autostart: false
+      };
+    }
+    function resetForm() {
+      document.getElementById('editId').value = '';
+      document.getElementById('formTitle').textContent = '添加转码任务';
+      document.getElementById('submitBtn').textContent = '添加';
+      document.getElementById('cancelEditBtn').style.display = 'none';
+      document.getElementById('inputAddr').value = '';
+      document.getElementById('inputOptions').value = '';
+      document.getElementById('outputAddr').value = '';
+      document.getElementById('transcodeOptions').value = '';
+      document.getElementById('outputOptions').value = '';
+    }
+    function submitProcess() {
+      const editId = document.getElementById('editId').value.trim();
+      const payload = getFormPayload();
+      if (!payload.input[0].address || !payload.output[0].address) {
+        alert('请填写输入和输出地址');
+        return;
+      }
+      if (editId) {
+        api('/api/v3/process/' + editId, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        }).then(() => {
+          resetForm();
+          loadProcesses();
+        }).catch(e => alert(e.message));
+      } else {
+        api('/api/v3/process', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        }).then(() => {
+          resetForm();
+          loadProcesses();
+        }).catch(e => alert(e.message));
+      }
+    }
+    function cancelEdit() {
+      resetForm();
+    }
+    function splitOutputOptions(opts) {
+      if (!opts || !opts.length) return { transcode: [], format: [] };
+      const idx = opts.indexOf('-f');
+      if (idx >= 0 && idx + 1 < opts.length) {
+        return {
+          transcode: opts.slice(0, idx),
+          format: opts.slice(idx, idx + 2)
+        };
+      }
+      return { transcode: opts, format: [] };
+    }
+    function openEdit(id) {
+      api('/api/v3/process/' + id + '/config').then(cfg => {
+        const inp = cfg.input?.[0];
+        const out = cfg.output?.[0];
+        const { transcode, format } = splitOutputOptions(out?.options);
+        document.getElementById('editId').value = id;
+        document.getElementById('formTitle').textContent = '编辑任务 - ' + id;
+        document.getElementById('submitBtn').textContent = '保存';
+        document.getElementById('cancelEditBtn').style.display = 'inline-block';
+        document.getElementById('inputAddr').value = inp?.address || '';
+        document.getElementById('inputOptions').value = (inp?.options || []).join(' ');
+        document.getElementById('outputAddr').value = out?.address || '';
+        document.getElementById('transcodeOptions').value = transcode.join(' ');
+        document.getElementById('outputOptions').value = format.join(' ');
+      }).catch(e => alert(e.message));
+    }
+    function cmd(id, c) {
+      api('/api/v3/process/' + id + '/command', {
+        method: 'PUT',
+        body: JSON.stringify({ command: c })
+      }).then(() => loadProcesses()).catch(e => alert(e.message));
+    }
+    function delProcess(id) {
+      if (!confirm('确定删除该任务？')) return;
+      api('/api/v3/process/' + id, { method: 'DELETE' })
+        .then(() => loadProcesses())
+        .catch(e => alert(e.message));
+    }
+    function showState(id) {
+      api('/api/v3/process/' + id + '/state').then(s => {
+        let html = `<div class="progress-grid">`;
+        html += `<div class="progress-item">状态: <span>${s.exec || '-'}</span></div>`;
+        html += `<div class="progress-item">运行时间: <span>${s.runtime_seconds ?? 0}s</span></div>`;
+        html += `<div class="progress-item">CPU: <span>${(s.cpu_usage != null && s.cpu_usage > 0) ? s.cpu_usage.toFixed(1) + '%' : '-'}</span></div>`;
+        html += `<div class="progress-item">内存: <span>${(s.memory_bytes != null && s.memory_bytes > 0) ? (s.memory_bytes/1024/1024).toFixed(1) + ' MB' : '-'}</span></div>`;
+        const prog = s.progress || {};
+        const hasProg = prog.frame > 0 || prog.speed > 0 || prog.time_seconds > 0 || prog.size_bytes > 0;
+        html += `<div class="progress-item">帧数: <span>${hasProg ? prog.frame : '-'}</span></div>`;
+        html += `<div class="progress-item">速度: <span>${hasProg && prog.speed ? prog.speed + 'x' : '-'}</span></div>`;
+        html += `<div class="progress-item">已处理时长: <span>${hasProg && prog.time_seconds ? prog.time_seconds.toFixed(1) + 's' : '-'}</span></div>`;
+        html += `<div class="progress-item">输出大小: <span>${hasProg && prog.size_bytes ? (prog.size_bytes/1024/1024).toFixed(2) + ' MB' : '-'}</span></div>`;
+        html += `</div>`;
+        const fullCmd = 'ffmpeg ' + (s.command || []).join(' ');
+        html += `<div class="progress-item" style="margin-top:0.5rem"><b>完整命令:</b></div><pre class="cmd-pre" style="margin-top:0.25rem;white-space:pre-wrap;word-break:break-all;user-select:all">${escapeHtml(fullCmd)}</pre>`;
+        openModal('状态 - ' + id, html);
+      }).catch(e => openModal('错误', '<span class="err">' + e.message + '</span>'));
+    }
+    function showCommand(id) {
+      api('/api/v3/process/' + id + '/state').then(s => {
+        const fullCmd = 'ffmpeg ' + (s.command || []).join(' ');
+        const html = `<pre class="cmd-pre" style="white-space:pre-wrap;word-break:break-all;user-select:all;max-height:60vh;overflow:auto">${escapeHtml(fullCmd)}</pre>
+          <p class="muted" style="margin-top:0.5rem;font-size:0.75rem">可全选复制以在终端验证</p>`;
+        openModal('FFmpeg 完整命令 - ' + id, html);
+      }).catch(e => openModal('错误', '<span class="err">' + e.message + '</span>'));
+    }
+    function formatLogTs(ts) {
+      if (!ts) return '-';
+      if (ts.includes('-') && ts.includes(':')) return ts; // 已是可读格式
+      const n = parseInt(ts, 10);
+      if (isNaN(n)) return ts;
+      const d = new Date(n * 1000);
+      const pad = (x, w = 2) => String(x).padStart(w, '0');
+      const ms = d.getMilliseconds();
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${String(ms).padStart(3,'0')}`;
+    }
+    function showReport(id) {
+      api('/api/v3/process/' + id + '/report').then(r => {
+        let html = '';
+        (r.log || []).forEach(([ts, line]) => {
+          html += `<div class="log-line"><span class="log-ts">${formatLogTs(ts)}</span>${escapeHtml(line)}</div>`;
+        });
+        openModal('日志 - ' + id, html || '<span class="muted">暂无日志</span>');
+      }).catch(e => openModal('错误', '<span class="err">' + e.message + '</span>'));
+    }
+    function loadSkills() {
+      api('/api/v3/skills').then(s => {
+        const ff = s.ffmpeg || {};
+        let html = `<div class="skills-version">FFmpeg ${ff.version || '-'}</div>`;
+        if (ff.compiler) html += `<div class="skills-section"><h4>编译器</h4><div>${escapeHtml(ff.compiler)}</div></div>`;
+        if (ff.configuration) html += `<div class="skills-section"><h4>配置</h4><pre style="font-size:0.7rem;max-height:80px;overflow:auto">${escapeHtml(ff.configuration)}</pre></div>`;
+        if (ff.libraries?.length) {
+          html += `<div class="skills-section"><h4>库 (${ff.libraries.length})</h4><div class="skills-grid">`;
+          ff.libraries.forEach(lib => { html += `<span class="skills-chip">${escapeHtml(lib.name)} ${lib.compiled || ''}</span>`; });
+          html += `</div></div>`;
+        }
+        const filters = s.filter || [];
+        html += `<div class="skills-section"><h4>滤镜 (${filters.length})</h4><div class="skills-list">`;
+        filters.slice(0, 60).forEach(f => { html += `<span class="skills-chip">${escapeHtml(f.id)}</span> `; });
+        if (filters.length > 60) html += ` ... 等 ${filters.length} 个`;
+        html += `</div></div>`;
+        const hw = s.hwaccels || [];
+        html += `<div class="skills-section"><h4>硬件加速 (${hw.length})</h4><div class="skills-grid">`;
+        hw.forEach(h => { html += `<span class="skills-chip">${escapeHtml(h.id || h.name)}</span>`; });
+        html += `</div></div>`;
+        const vc = s.codecs?.video || [], ac = s.codecs?.audio || [], sc = s.codecs?.subtitle || [];
+        html += `<div class="skills-section"><h4>编解码器</h4>`;
+        html += `<div>视频: ${vc.length} 个 | 音频: ${ac.length} 个 | 字幕: ${sc.length} 个</div>`;
+        const vEnc = [...new Set(vc.flatMap(c => (c.encoders||[]).filter(Boolean)))].slice(0, 20);
+        html += `<div style="margin-top:0.3rem">常用视频编码: ${vEnc.map(e=>`<span class="skills-chip">${e}</span>`).join(' ')}</div>`;
+        const aEnc = [...new Set(ac.flatMap(c => (c.encoders||[]).filter(Boolean)))].slice(0, 15);
+        html += `<div style="margin-top:0.3rem">常用音频编码: ${aEnc.map(e=>`<span class="skills-chip">${e}</span>`).join(' ')}</div>`;
+        html += `</div>`;
+        const pin = s.protocols?.input || [], pout = s.protocols?.output || [];
+        html += `<div class="skills-section"><h4>协议</h4>`;
+        html += `<div><b>输入:</b> ${pin.map(p=>p.id||p.name).join(', ')}</div>`;
+        html += `<div style="margin-top:0.3rem"><b>输出:</b> ${pout.map(p=>p.id||p.name).join(', ')}</div>`;
+        html += `</div>`;
+        const dmx = s.formats?.demuxers || [], mux = s.formats?.muxers || [];
+        if (dmx.length || mux.length) {
+          html += `<div class="skills-section"><h4>格式</h4>`;
+          html += `<div>解复用: ${dmx.length} 个 | 复用: ${mux.length} 个</div>`;
+          html += `</div>`;
+        }
+        openModal('FFmpeg Skills', html);
+      }).catch(e => openModal('错误', '<span class="err">' + e.message + '</span>'));
+    }
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+    function openModal(title, body) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalBody').innerHTML = body;
+      document.getElementById('modal').style.display = 'flex';
+    }
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+    loadProcesses();
+  </script>
+</body>
+</html>

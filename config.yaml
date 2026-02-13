@@ -1,0 +1,9 @@
+# TranscodeManager 配置文件示例
+
+server:
+  bind: ":8080"          # 服务监听地址，如 ":8080" 或 "0.0.0.0:8080"
+
+ffmpeg:
+  path: "ffmpeg"        # FFmpeg 可执行路径
+                        # - "ffmpeg": 从系统 PATH 查找
+                        # - 完整路径: "/usr/bin/ffmpeg" 或 "/opt/ffmpeg/bin/ffmpeg"
