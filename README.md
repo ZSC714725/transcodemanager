@@ -15,6 +15,23 @@
 - **Go** 1.23+
 - **FFmpeg**：需在 PATH 或通过配置指定可执行路径
 
+## Docker 运行
+
+项目支持 Docker 部署，镜像内已包含 FFmpeg：
+
+```bash
+# 构建并运行（docker-compose）
+docker compose up -d --build
+
+# 或仅构建镜像
+docker build -t transcodemanager .
+
+# 运行容器
+docker run -d -p 8080:8080 -v $(pwd)/data:/data transcodemanager
+```
+
+启动后访问 http://localhost:8080。文件转码任务请将输入/输出路径置于挂载的 `/data` 目录下（如 `/data/input.mp4`）。
+
 ## 快速开始
 
 ```bash

@@ -1,0 +1,14 @@
+services:
+  transcodemanager:
+    build: .
+    image: transcodemanager:latest
+    container_name: transcodemanager
+    ports:
+      - "8080:8080"
+    volumes:
+      - transcodemanager_data:/data
+    # command: ["-config", "/app/config.yaml", "-bind", "0.0.0.0:8080"]
+    restart: unless-stopped
+
+volumes:
+  transcodemanager_data:

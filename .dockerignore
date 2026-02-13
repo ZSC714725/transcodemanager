@@ -1,0 +1,20 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# 构建产物
+transcodemanager
+*.exe
+
+# 文档与杂项
+README.md
+*.md
+Dockerfile
+docker-compose*.yml
+.dockerignore
