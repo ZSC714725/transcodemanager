@@ -60,6 +60,16 @@ type ProcessConfig struct {
 	Limits        ProcessConfigLimits  `json:"limits"`
 }
 
+// StateCounts cumulative state transition counts.
+type StateCounts struct {
+	Finished  uint64 `json:"finished"`
+	Starting  uint64 `json:"starting"`
+	Running   uint64 `json:"running"`
+	Finishing uint64 `json:"finishing"`
+	Failed    uint64 `json:"failed"`
+	Killed    uint64 `json:"killed"`
+}
+
 // ProcessState for API
 type ProcessState struct {
 	Order     string    `json:"order"`
@@ -70,6 +80,9 @@ type ProcessState struct {
 	Progress  *Progress  `json:"progress"`
 	Memory    uint64    `json:"memory_bytes"`
 	CPU       float64   `json:"cpu_usage"`
+	MemoryLimit uint64  `json:"memory_limit_bytes"`
+	CPULimit    float64 `json:"cpu_limit_usage"`
+	Counts    *StateCounts `json:"counts,omitempty"`
 	Command   []string  `json:"command"`
 }
 

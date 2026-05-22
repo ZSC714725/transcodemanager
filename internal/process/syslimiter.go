@@ -6,21 +6,25 @@
 package process
 
 import (
+	"context"
 	"sync"
+	"time"
 
 	gopsutilprocess "github.com/shirou/gopsutil/v3/process"
 )
 
-// sysLimiter 使用 gopsutil 采集进程 CPU 和内存
+// sysLimiter collects CPU/memory via gopsutil and optionally enforces limits.
 type sysLimiter struct {
 	mu   sync.RWMutex
 	pid  int32
 	proc *gopsutilprocess.Process
-}
 
-// NewSysLimiter 创建基于系统调用的限流器
-func NewSysLimiter() Limiter {
-	return &sysLimiter{}
+	cpuLimit float64
+	memLimit uint64
+	waitFor  time.Duration
+
+	enforceCancel context.CancelFunc
+	enforceMu     sync.Mutex
 }
 
 func (l *sysLimiter) Start(pid int) error {
@@ -36,6 +40,7 @@ func (l *sysLimiter) Start(pid int) error {
 }
 
 func (l *sysLimiter) Stop() {
+	l.stopEnforcement()
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.pid = 0
@@ -59,5 +64,69 @@ func (l *sysLimiter) Current() (cpu float64, memory uint64) {
 }
 
 func (l *sysLimiter) Limits() (float64, uint64) {
-	return 0, 0
+	return l.cpuLimit, l.memLimit
+}
+
+func (l *sysLimiter) startEnforcement(onExceeded func()) {
+	if l.cpuLimit <= 0 && l.memLimit == 0 {
+		return
+	}
+	l.stopEnforcement()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	l.enforceMu.Lock()
+	l.enforceCancel = cancel
+	l.enforceMu.Unlock()
+
+	go l.enforceLoop(ctx, onExceeded)
+}
+
+func (l *sysLimiter) stopEnforcement() {
+	l.enforceMu.Lock()
+	defer l.enforceMu.Unlock()
+	if l.enforceCancel != nil {
+		l.enforceCancel()
+		l.enforceCancel = nil
+	}
+}
+
+func (l *sysLimiter) enforceLoop(ctx context.Context, onExceeded func()) {
+	wait := l.waitFor
+	if wait <= 0 {
+		wait = 5 * time.Second
+	}
+
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(wait):
+	}
+
+	cpuOverCount := 0
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			cpu, mem := l.Current()
+			if l.memLimit > 0 && mem > l.memLimit {
+				onExceeded()
+				return
+			}
+			if l.cpuLimit > 0 {
+				if cpu > l.cpuLimit {
+					cpuOverCount++
+					if cpuOverCount >= 3 {
+						onExceeded()
+						return
+					}
+				} else {
+					cpuOverCount = 0
+				}
+			}
+		}
+	}
 }

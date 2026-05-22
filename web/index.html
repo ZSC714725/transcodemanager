@@ -26,6 +26,55 @@
     }
     h1 { font-size: 1.25rem; margin-bottom: 1rem; color: var(--accent); }
     h2 { font-size: 1rem; margin: 1rem 0 0.5rem; color: var(--muted); }
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .header-row h1 { margin-bottom: 0; }
+    .poll-badge {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .poll-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .poll-dot.active { background: var(--accent); animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .dash-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+    }
+    .dash-item .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .dash-item .value { font-size: 1.25rem; font-weight: 600; margin-top: 0.25rem; }
+    .dash-item .value.accent { color: var(--accent); }
+    .dash-item .value.warn { color: var(--warning); }
+    .dash-item .value.danger { color: var(--danger); }
+    .health-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 0.35rem;
+      background: var(--muted);
+    }
+    .health-dot.ok { background: var(--accent); }
+    .health-dot.fail { background: var(--danger); }
     .api-bar {
       display: flex;
       gap: 0.5rem;
@@ -41,6 +90,7 @@
       font-weight: 500;
       cursor: pointer;
       font-size: 0.875rem;
+      font-family: inherit;
     }
     .api-bar button:hover { background: #52525b; }
     .api-bar button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
@@ -72,6 +122,7 @@
       border-radius: 6px;
       color: var(--text);
       font-size: 0.875rem;
+      font-family: inherit;
     }
     .form-row textarea { min-height: 60px; resize: vertical; }
     .btn {
@@ -88,6 +139,64 @@
     .btn-danger { background: var(--danger); color: white; }
     .btn-warning { background: var(--warning); color: var(--bg); }
     .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+    .api-key-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+    .api-key-wrap input {
+      width: 160px;
+      padding: 0.35rem 0.5rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.75rem;
+      font-family: inherit;
+    }
+    .api-key-wrap input:focus { outline: none; border-color: var(--accent); }
+    #taskFormCard { scroll-margin-top: 1rem; }
+    .filter-bar { padding: 0.75rem 1rem; margin-bottom: 0.75rem; }
+    .filter-bar .form-row { margin-bottom: 0.5rem; }
+    .filter-bar select {
+      flex: 1;
+      min-width: 140px;
+      padding: 0.5rem 0.75rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.875rem;
+      font-family: inherit;
+    }
+    .filter-summary { font-size: 0.75rem; margin-top: 0.25rem; }
+    .id-row { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+    .task-item .id { font-size: 0.75rem; color: var(--muted); font-family: inherit; }
+    .ref-badge {
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(34,197,94,0.15);
+      color: var(--accent);
+    }
+    .cmd-panel { margin-top: 0.5rem; }
+    .cmd-pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+      max-height: 50vh;
+      overflow: auto;
+      margin-bottom: 0.5rem;
+    }
+    .cmd-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
     .task-list { list-style: none; }
     .task-item {
       background: var(--bg);
@@ -95,6 +204,8 @@
       border-radius: 6px;
       padding: 0.75rem 1rem;
       margin-bottom: 0.5rem;
+    }
+    .task-item .row-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -103,7 +214,7 @@
     }
     .task-item .info { flex: 1; min-width: 200px; }
     .task-item .id { font-size: 0.75rem; color: var(--muted); }
-    .task-item .addr { font-size: 0.85rem; margin-top: 2px; }
+    .task-item .addr { font-size: 0.85rem; margin-top: 2px; word-break: break-all; }
     .task-item .state {
       padding: 0.2rem 0.5rem;
       border-radius: 4px;
@@ -114,7 +225,16 @@
     .state-finished { background: rgba(113,113,122,0.3); color: var(--muted); }
     .state-failed, .state-killed { background: rgba(239,68,68,0.2); color: var(--danger); }
     .state-starting, .state-finishing { background: rgba(234,179,8,0.2); color: var(--warning); }
-    .task-item .actions { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+    .task-item .metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .task-item .metrics span b { color: var(--text); font-weight: 500; }
+    .task-item .actions { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.5rem; }
     .modal-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.7);
@@ -162,6 +282,8 @@
     .progress-item span { color: var(--muted); }
     .log-line { margin: 2px 0; font-size: 0.75rem; }
     .log-ts { color: var(--muted); margin-right: 0.5rem; }
+    .log-progress { color: var(--accent); }
+    .log-error { color: var(--danger); }
     .muted { color: var(--muted); }
     .err { color: var(--danger); font-size: 0.85rem; margin-top: 0.5rem; }
     .skills-version { color: var(--accent); margin-bottom: 0.5rem; }
@@ -170,39 +292,169 @@
     .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.3rem; font-size: 0.75rem; }
     .skills-chip { background: var(--bg); padding: 0.2rem 0.4rem; border-radius: 4px; }
     .skills-list { max-height: 200px; overflow-y: auto; font-size: 0.75rem; }
+    .io-section { margin-bottom: 1rem; }
+    .io-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    .io-section-header h3 { font-size: 0.9rem; color: var(--muted); font-weight: 500; }
+    .io-block {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      background: var(--bg);
+    }
+    .io-block-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .io-block .form-row { margin-bottom: 0.5rem; }
+    .io-block .form-row label { width: 72px; font-size: 0.75rem; }
+    .io-block .form-row input { min-width: 140px; font-size: 0.8rem; }
+    .toast-container {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .toast {
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      max-width: 360px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      animation: slideIn 0.2s ease;
+    }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+    .toast.error { background: #451a1a; border: 1px solid var(--danger); color: #fca5a5; }
+    .toast.success { background: #14532d; border: 1px solid var(--accent); color: #86efac; }
+    .toast.info { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
   </style>
 </head>
 <body>
-  <h1>TranscodeManager 控制台</h1>
+  <div class="header-row">
+    <h1>TranscodeManager 控制台</h1>
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      <div class="api-key-wrap">
+        <input type="password" id="apiKeyInput" placeholder="API Key（鉴权开启时必填）" autocomplete="off">
+        <button type="button" class="btn btn-sm btn-secondary" onclick="saveApiKey()">保存</button>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="clearApiKey()" title="清除 API Key">清除</button>
+      </div>
+      <div class="poll-badge">
+        <span class="poll-dot" id="pollDot"></span>
+        <span id="pollLabel">自动刷新已暂停</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard card" id="dashboard">
+    <div class="dash-item">
+      <div class="label">服务状态</div>
+      <div class="value" id="dashHealth"><span class="health-dot" id="healthDot"></span>-</div>
+    </div>
+    <div class="dash-item">
+      <div class="label">FFmpeg</div>
+      <div class="value accent" id="dashFFmpeg" style="font-size:0.85rem">-</div>
+    </div>
+    <div class="dash-item">
+      <div class="label">任务总数</div>
+      <div class="value" id="dashTotal">0</div>
+    </div>
+    <div class="dash-item">
+      <div class="label">运行中</div>
+      <div class="value accent" id="dashRunning">0</div>
+    </div>
+    <div class="dash-item">
+      <div class="label">事件流</div>
+      <div class="value" id="dashSSE" style="font-size:0.85rem"><span class="health-dot" id="sseDot"></span>连接中</div>
+    </div>
+    <div class="dash-item">
+      <div class="label">失败/终止</div>
+      <div class="value danger" id="dashFailed">0</div>
+    </div>
+    <div class="dash-item">
+      <div class="label">Webhooks</div>
+      <div class="value" id="dashHooks">-</div>
+    </div>
+  </div>
 
   <div class="api-bar card">
     <button onclick="loadProcesses()">刷新列表</button>
     <button onclick="loadSkills()">FFmpeg Skills</button>
+    <button onclick="showHooks()">Webhooks</button>
+    <button onclick="toggleAutoRefresh()" id="autoRefreshBtn">开启自动刷新</button>
   </div>
 
-  <div class="card">
+  <div class="card" id="taskFormCard">
     <h2><span id="formTitle">添加转码任务</span></h2>
     <input type="hidden" id="editId" value="">
-    <div class="form-row">
-      <label>输入</label>
-      <input type="text" id="inputAddr" placeholder="file:///path/to/input.mp4 或 rtmp://...">
+
+    <div class="io-section">
+      <div class="io-section-header">
+        <h3>输入源</h3>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="addInputRow()">+ 添加输入</button>
+      </div>
+      <div id="inputsList"></div>
     </div>
-    <div class="form-row">
-      <label>输入选项</label>
-      <input type="text" id="inputOptions" placeholder="-re -stream_loop -1 (可选，放在 -i 前)">
+
+    <div class="io-section">
+      <div class="io-section-header">
+        <h3>输出目标</h3>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="addOutputRow()">+ 添加输出</button>
+      </div>
+      <div id="outputsList"></div>
+      <p class="muted" style="font-size:0.75rem;margin-top:0.25rem">每个输出的「选项」含编解码与格式，如 <code>-c:v libx264 -c:a aac -f flv</code>；留空则首个输出默认 H.264+AAC。</p>
     </div>
-    <div class="form-row">
-      <label>输出</label>
-      <input type="text" id="outputAddr" placeholder="/path/to/output.mp4 或 rtmp://...">
-    </div>
-    <div class="form-row">
-      <label>转码选项</label>
-      <input type="text" id="transcodeOptions" placeholder="-vcodec copy -acodec copy (音视频编解码，默认 -c:v libx264 -c:a aac)">
-    </div>
-    <div class="form-row">
-      <label>输出选项</label>
-      <input type="text" id="outputOptions" placeholder="-f flv (输出格式，可选)">
-    </div>
+
+    <details class="card" style="margin:0.75rem 0;padding:0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px">
+      <summary style="cursor:pointer;color:var(--muted);font-size:0.85rem">高级选项</summary>
+      <div class="form-row" style="margin-top:0.75rem">
+        <label>全局选项</label>
+        <input type="text" id="globalOptions" placeholder="-y -hide_banner (ffmpeg 全局参数，可选)">
+      </div>
+      <div class="form-row">
+        <label>Reference</label>
+        <input type="text" id="taskReference" placeholder="业务标识，可选">
+      </div>
+      <div class="form-row">
+        <label>自动启动</label>
+        <input type="checkbox" id="taskAutostart" style="width:auto;min-width:auto">
+      </div>
+      <div class="form-row">
+        <label>自动重连</label>
+        <input type="checkbox" id="taskReconnect" style="width:auto;min-width:auto">
+      </div>
+      <div class="form-row">
+        <label>重连延迟</label>
+        <input type="number" id="taskReconnectDelay" placeholder="秒，默认 5" min="0">
+      </div>
+      <div class="form-row">
+        <label>僵死超时</label>
+        <input type="number" id="taskStaleTimeout" placeholder="秒，0=禁用" min="0">
+      </div>
+      <div class="form-row">
+        <label>CPU 上限%</label>
+        <input type="number" id="limitCPU" placeholder="0=不限，连续3秒超限则停止" min="0" step="0.1">
+      </div>
+      <div class="form-row">
+        <label>内存上限MB</label>
+        <input type="number" id="limitMemory" placeholder="0=不限" min="0">
+      </div>
+      <div class="form-row">
+        <label>限制宽限</label>
+        <input type="number" id="limitWaitFor" placeholder="秒，启动后宽限期" min="0">
+      </div>
+    </details>
     <div class="form-row">
       <label></label>
       <button class="btn btn-primary" id="submitBtn" onclick="submitProcess()">添加</button>
@@ -211,6 +463,35 @@
   </div>
 
   <h2>任务列表</h2>
+  <div class="filter-bar card">
+    <div class="form-row">
+      <label>Reference</label>
+      <input type="text" id="filterReference" placeholder="服务端筛选，留空显示全部">
+    </div>
+    <div class="form-row">
+      <label>状态</label>
+      <select id="filterState">
+        <option value="">全部</option>
+        <option value="active">运行中（starting/running/finishing）</option>
+        <option value="starting">starting</option>
+        <option value="running">running</option>
+        <option value="finishing">finishing</option>
+        <option value="finished">finished</option>
+        <option value="failed">failed</option>
+        <option value="killed">killed</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>任务 ID</label>
+      <input type="text" id="filterTaskId" placeholder="前缀或片段匹配">
+    </div>
+    <div class="form-row">
+      <label></label>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="applyFilters()">筛选</button>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="clearFilters()">清除</button>
+    </div>
+    <div class="filter-summary muted" id="filterSummary"></div>
+  </div>
   <ul class="task-list" id="taskList"></ul>
 
   <div id="modal" class="modal-overlay" style="display:none">
@@ -223,204 +504,868 @@
     </div>
   </div>
 
+  <div class="toast-container" id="toastContainer"></div>
+
   <script>
+    const POLL_FAST = 3000;
+    const POLL_SLOW = 30000;
+    const LOG_TAIL_INTERVAL = 2000;
+    const API_KEY_STORAGE = 'tm_api_key';
+    let autoRefresh = false;
+    let pollTimer = null;
+    let logTailTimer = null;
+    let logTailId = null;
+    let lastTaskList = [];
+    let eventSource = null;
+    let sseConnected = false;
+    let modalOpen = false;
+
     function baseUrl() {
       return (window.location.origin || '').replace(/\/$/, '');
     }
+
+    function getApiKey() {
+      return localStorage.getItem(API_KEY_STORAGE) || '';
+    }
+
+    function setApiKey(key) {
+      if (key) localStorage.setItem(API_KEY_STORAGE, key);
+      else localStorage.removeItem(API_KEY_STORAGE);
+      connectEventStream();
+    }
+
+    function authHeaders() {
+      const key = getApiKey();
+      if (!key) return {};
+      return { Authorization: 'Bearer ' + key };
+    }
+
+    function eventsStreamUrl() {
+      let url = baseUrl() + '/api/v3/events/stream';
+      const key = getApiKey();
+      if (key) url += '?api_key=' + encodeURIComponent(key);
+      return url;
+    }
+
+    function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      setApiKey(key);
+      toast(key ? 'API Key 已保存' : 'API Key 已清除', 'success');
+      loadHealth();
+      loadSummary();
+      loadHooksInfo();
+      loadProcesses(true);
+    }
+
+    function clearApiKey() {
+      document.getElementById('apiKeyInput').value = '';
+      setApiKey('');
+      toast('API Key 已清除', 'info');
+      loadHealth();
+      loadSummary();
+      loadHooksInfo();
+      loadProcesses(true);
+    }
+
+    function withBusy(btn, busyLabel, fn) {
+      if (!btn || btn.disabled) return Promise.resolve();
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = busyLabel;
+      return Promise.resolve(fn()).finally(() => {
+        btn.disabled = false;
+        btn.textContent = orig;
+      });
+    }
+
+    function isActionDisabled(state, action) {
+      const active = isActiveState(state);
+      if (action === 'start') return active;
+      if (action === 'stop') return !active;
+      return false;
+    }
+
+    function actionBtn(action, label, cls, state) {
+      const disabled = isActionDisabled(state, action);
+      return `<button class="btn btn-sm ${cls}" data-action="${action}"${disabled ? ' disabled' : ''}>${label}</button>`;
+    }
+
+    function scrollToForm() {
+      document.getElementById('taskFormCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function shortId(id) {
+      if (!id) return '-';
+      return id.length > 12 ? id.slice(0, 8) + '…' : id;
+    }
+
+    async function copyText(text) {
+      if (!text) { toast('无内容可复制', 'error'); return; }
+      try {
+        await navigator.clipboard.writeText(text);
+        toast('已复制到剪贴板', 'success');
+      } catch (_) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          toast('已复制到剪贴板', 'success');
+        } catch (e) {
+          toast('复制失败', 'error');
+        }
+        ta.remove();
+      }
+    }
+
+    function renderCommandPanel(cmdArray) {
+      const fullCmd = 'ffmpeg ' + (cmdArray || []).join(' ');
+      const preId = 'cmd-pre-' + Date.now();
+      return `<div class="cmd-panel">
+        <pre class="cmd-pre" id="${preId}">${escapeHtml(fullCmd)}</pre>
+        <div class="cmd-actions">
+          <button type="button" class="btn btn-sm btn-primary cmd-copy-btn" data-copy-target="${preId}">复制命令</button>
+        </div>
+      </div>`;
+    }
+
+    function getFilterState() {
+      return document.getElementById('filterState')?.value || '';
+    }
+
+    function matchesStateFilter(exec, filterState) {
+      if (!filterState) return true;
+      if (filterState === 'active') return isActiveState(exec);
+      return exec === filterState;
+    }
+
+    function filterTaskList(list) {
+      const idQ = document.getElementById('filterTaskId')?.value.trim().toLowerCase();
+      const stateF = getFilterState();
+      return (list || []).filter(p => {
+        const exec = p.state?.exec || '';
+        if (!matchesStateFilter(exec, stateF)) return false;
+        if (idQ && !(p.id || '').toLowerCase().includes(idQ)) return false;
+        return true;
+      });
+    }
+
+    function updateFilterSummary(shown, total) {
+      const el = document.getElementById('filterSummary');
+      if (!el) return;
+      const hasFilter = getFilterState() || document.getElementById('filterTaskId')?.value.trim()
+        || document.getElementById('filterReference')?.value.trim();
+      if (!hasFilter) { el.textContent = total ? `共 ${total} 个任务` : ''; return; }
+      el.textContent = shown === total ? `共 ${total} 个任务（已筛选）` : `显示 ${shown} / ${total} 个任务`;
+    }
+
+    function syncFiltersToUrl() {
+      const params = new URLSearchParams();
+      const ref = document.getElementById('filterReference')?.value.trim();
+      const state = getFilterState();
+      const id = document.getElementById('filterTaskId')?.value.trim();
+      if (ref) params.set('ref', ref);
+      if (state) params.set('state', state);
+      if (id) params.set('id', id);
+      const qs = params.toString();
+      history.replaceState(null, '', qs ? '?' + qs : window.location.pathname);
+    }
+
+    function initFiltersFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('ref')) document.getElementById('filterReference').value = params.get('ref');
+      if (params.has('state')) document.getElementById('filterState').value = params.get('state');
+      if (params.has('id')) document.getElementById('filterTaskId').value = params.get('id');
+    }
+
+    function applyFiltersAndRender() {
+      const filtered = filterTaskList(lastTaskList);
+      renderTaskList(filtered, lastTaskList.length);
+      updateFilterSummary(filtered.length, lastTaskList.length);
+      syncFiltersToUrl();
+    }
+
+    function applyFilters() {
+      loadProcesses(true);
+    }
+
+    function clearFilters() {
+      document.getElementById('filterReference').value = '';
+      document.getElementById('filterState').value = '';
+      document.getElementById('filterTaskId').value = '';
+      loadProcesses(false);
+    }
+
+    function toast(msg, type = 'info') {
+      const el = document.createElement('div');
+      el.className = 'toast ' + type;
+      el.textContent = msg;
+      document.getElementById('toastContainer').appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+
     function api(path, opts = {}) {
       return fetch(baseUrl() + path, {
-        headers: { 'Content-Type': 'application/json', ...opts.headers },
+        headers: { 'Content-Type': 'application/json', ...authHeaders(), ...opts.headers },
         ...opts
       }).then(r => {
+        if (r.status === 401) {
+          throw new Error('未授权：请在右上角设置 API Key');
+        }
         if (!r.ok) return r.json().then(j => { throw new Error(j.message || j.detail || r.statusText); });
         const ct = r.headers.get('content-type');
         if (ct && ct.includes('application/json')) return r.json();
         return r.text();
       });
     }
-    function loadProcesses() {
-      api('/api/v3/process?filter=config,state')
-        .then(list => {
-          const ul = document.getElementById('taskList');
-          ul.innerHTML = '';
-          if (!list || list.length === 0) {
-            ul.innerHTML = '<li class="task-item">暂无任务</li>';
-            return;
-          }
-          list.forEach(p => {
-            const state = p.state?.exec || '-';
-            const inAddr = p.config?.input?.[0]?.address || '-';
-            const outAddr = p.config?.output?.[0]?.address || '-';
-            const li = document.createElement('li');
-            li.className = 'task-item';
-            li.innerHTML = `
-              <div class="info">
-                <div class="id">${p.id}</div>
-                <div class="addr">${inAddr} → ${outAddr}</div>
-              </div>
-              <span class="state state-${state}">${state}</span>
-              <div class="actions">
-                <button class="btn btn-sm btn-primary" onclick="cmd('${p.id}','start')">启动</button>
-                <button class="btn btn-sm btn-warning" onclick="cmd('${p.id}','stop')">停止</button>
-                <button class="btn btn-sm btn-secondary" onclick="cmd('${p.id}','restart')">重启</button>
-                <button class="btn btn-sm btn-secondary" onclick="showState('${p.id}')">状态</button>
-                <button class="btn btn-sm btn-secondary" onclick="showCommand('${p.id}')">命令</button>
-                <button class="btn btn-sm btn-secondary" onclick="showReport('${p.id}')">日志</button>
-                <button class="btn btn-sm btn-secondary" onclick="openEdit('${p.id}')">编辑</button>
-                <button class="btn btn-sm btn-danger" onclick="delProcess('${p.id}')">删除</button>
-              </div>
-            `;
-            ul.appendChild(li);
-          });
-        })
-        .catch(e => { document.getElementById('taskList').innerHTML = '<li class="task-item err">' + e.message + '</li>'; });
+
+    function formatBytes(n) {
+      if (!n || n <= 0) return '-';
+      return (n / 1024 / 1024).toFixed(1) + ' MB';
     }
+
+    function formatRuntime(sec) {
+      if (!sec || sec <= 0) return '-';
+      if (sec < 60) return sec + 's';
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return m + 'm' + s + 's';
+    }
+
+    function isActiveState(state) {
+      return ['starting', 'running', 'finishing'].includes(state);
+    }
+
+    function currentPollInterval() {
+      return sseConnected ? POLL_SLOW : POLL_FAST;
+    }
+
+    function setSSEStatus(connected, label) {
+      sseConnected = connected;
+      const dot = document.getElementById('sseDot');
+      const dash = document.getElementById('dashSSE');
+      dot.className = 'health-dot ' + (connected ? 'ok' : 'fail');
+      dash.innerHTML = `<span class="health-dot ${connected ? 'ok' : 'fail'}"></span>${label}`;
+      if (autoRefresh) setAutoRefresh(true);
+    }
+
+    function connectEventStream() {
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+      setSSEStatus(false, '连接中');
+      eventSource = new EventSource(eventsStreamUrl());
+      eventSource.addEventListener('task', (e) => {
+        try {
+          const ev = JSON.parse(e.data);
+          handleTaskEvent(ev);
+        } catch (_) {}
+      });
+      eventSource.onopen = () => setSSEStatus(true, '已连接');
+      eventSource.onerror = () => {
+        setSSEStatus(false, '已断开');
+        eventSource.close();
+        eventSource = null;
+        setTimeout(connectEventStream, 5000);
+      };
+    }
+
+    function handleTaskEvent(ev) {
+      if (!ev || !ev.task_id) return;
+      if (ev.type === 'task.created' || ev.type === 'task.deleted') {
+        loadProcesses(true);
+        loadSummary();
+        return;
+      }
+      if (ev.type === 'task.state_change') {
+        const item = lastTaskList.find(p => p.id === ev.task_id);
+        if (item && item.state) {
+          item.state.exec = ev.to || ev.state;
+          applyFiltersAndRender();
+        } else {
+          loadProcesses(true);
+        }
+        loadSummary();
+        if (['failed', 'killed'].includes(ev.to)) {
+          toast(`任务 ${ev.task_id.slice(0, 8)}… ${ev.to}`, 'error');
+        }
+      }
+    }
+
+    async function loadHooksInfo() {
+      try {
+        const data = await api('/api/v3/hooks');
+        document.getElementById('dashHooks').textContent = (data.webhooks || []).length;
+      } catch (_) {
+        document.getElementById('dashHooks').textContent = '-';
+      }
+    }
+
+    function showHooks() {
+      api('/api/v3/hooks').then(data => {
+        const hooks = data.webhooks || [];
+        let html = `<div class="progress-item">SSE: <span>${data.sse_enabled ? '已启用' : '未启用'}</span></div>`;
+        html += `<div class="progress-item" style="margin-top:0.5rem">已注册 Webhook: <span>${hooks.length}</span></div>`;
+        if (hooks.length) {
+          html += '<div style="margin-top:0.75rem">';
+          hooks.forEach(h => {
+            html += `<div class="log-line"><b>${escapeHtml(h.id)}</b> → ${escapeHtml(h.url)}`;
+            if (h.events?.length) html += ` <span class="muted">[${h.events.join(', ')}]</span>`;
+            if (h.states?.length) html += ` <span class="muted">{${h.states.join(', ')}}</span>`;
+            html += ` <span class="muted">(${h.source})</span>`;
+            if (h.source === 'api') {
+              html += ` <button class="btn btn-sm btn-danger" data-hook-delete="${escapeHtml(h.id)}">删除</button>`;
+            }
+            html += `</div>`;
+          });
+          html += '</div>';
+        }
+        html += `<hr style="border-color:var(--border);margin:1rem 0">
+          <div class="form-row"><label>URL</label><input type="text" id="hookUrl" placeholder="https://example.com/hook"></div>
+          <div class="form-row"><label>事件</label><input type="text" id="hookEvents" placeholder="task.state_change,task.failed (可选)"></div>
+          <div class="form-row"><label>状态</label><input type="text" id="hookStates" placeholder="failed,killed (可选)"></div>
+          <div class="form-row"><label></label><button class="btn btn-primary" onclick="addWebhook()">添加 Webhook</button></div>`;
+        openModal('Webhooks / Hooks', html);
+        document.querySelectorAll('[data-hook-delete]').forEach(btn => {
+          btn.onclick = () => deleteWebhook(btn.dataset.hookDelete);
+        });
+      }).catch(e => toast(e.message, 'error'));
+    }
+
+    function addWebhook() {
+      const url = document.getElementById('hookUrl')?.value.trim();
+      if (!url) { toast('请填写 URL', 'error'); return; }
+      const events = parseOpts(document.getElementById('hookEvents')?.value || '');
+      const states = parseOpts(document.getElementById('hookStates')?.value || '');
+      api('/api/v3/hooks/webhook', {
+        method: 'POST',
+        body: JSON.stringify({ url, events, states })
+      }).then(() => {
+        toast('Webhook 已添加', 'success');
+        loadHooksInfo();
+        showHooks();
+      }).catch(e => toast(e.message, 'error'));
+    }
+
+    function deleteWebhook(id) {
+      if (!confirm('确定删除 Webhook ' + id + '？')) return;
+      api('/api/v3/hooks/webhook/' + id, { method: 'DELETE' })
+        .then(() => { toast('Webhook 已删除', 'success'); loadHooksInfo(); showHooks(); })
+        .catch(e => toast(e.message, 'error'));
+    }
+
+    function updateDashboardFromSummary(summary) {
+      const by = summary?.by_state || {};
+      const running = (by.running || 0) + (by.starting || 0) + (by.finishing || 0);
+      const failed = (by.failed || 0) + (by.killed || 0);
+      document.getElementById('dashTotal').textContent = summary?.total ?? 0;
+      document.getElementById('dashRunning').textContent = running;
+      document.getElementById('dashFailed').textContent = failed;
+      if (running > 0 && !autoRefresh) setAutoRefresh(true);
+    }
+
+    function updateDashboard(list) {
+      const running = list.filter(p => isActiveState(p.state?.exec)).length;
+      const failed = list.filter(p => ['failed', 'killed'].includes(p.state?.exec)).length;
+      document.getElementById('dashTotal').textContent = list.length;
+      document.getElementById('dashRunning').textContent = running;
+      document.getElementById('dashFailed').textContent = failed;
+      if (running > 0 && !autoRefresh) setAutoRefresh(true);
+    }
+
+    async function loadSummary() {
+      try {
+        const summary = await api('/api/v3/process/summary');
+        updateDashboardFromSummary(summary);
+      } catch (_) {}
+    }
+
+    async function loadHealth() {
+      const dot = document.getElementById('healthDot');
+      const dash = document.getElementById('dashHealth');
+      try {
+        const live = await api('/health/live');
+        const ready = await api('/health/ready');
+        dot.className = 'health-dot ok';
+        dash.innerHTML = '<span class="health-dot ok"></span>就绪';
+        if (ready.ffmpeg_version) {
+          document.getElementById('dashFFmpeg').textContent = ready.ffmpeg_version.split(' ')[0] || ready.ffmpeg_version;
+        }
+      } catch (e) {
+        dot.className = 'health-dot fail';
+        dash.innerHTML = '<span class="health-dot fail"></span>异常';
+      }
+    }
+
+    function renderMetrics(state) {
+      if (!state) return '';
+      const prog = state.progress || {};
+      const hasProg = prog.frame > 0 || prog.speed > 0 || prog.time_seconds > 0;
+      let html = '<div class="metrics">';
+      html += `<span>运行: <b>${formatRuntime(state.runtime_seconds)}</b></span>`;
+      if (state.cpu_usage > 0) html += `<span>CPU: <b>${state.cpu_usage.toFixed(1)}%</b></span>`;
+      if (state.memory_bytes > 0) html += `<span>内存: <b>${formatBytes(state.memory_bytes)}</b></span>`;
+      if (hasProg && prog.speed) html += `<span>速度: <b>${prog.speed}x</b></span>`;
+      if (hasProg && prog.frame) html += `<span>帧: <b>${prog.frame}</b></span>`;
+      if (state.reconnect_seconds >= 0) html += `<span>重连: <b>${state.reconnect_seconds}s</b></span>`;
+      html += '</div>';
+      return html;
+    }
+
+    function formatIOAddresses(items, fallback = '-') {
+      if (!items || !items.length) return fallback;
+      return items.map(i => i.address || '-').join(', ');
+    }
+
+    function escapeAttr(s) {
+      return String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    function renumberIOBlocks(listId, type) {
+      const list = document.getElementById(listId);
+      [...list.children].forEach((el, i) => {
+        const span = el.querySelector('.io-block-top span');
+        if (span) span.textContent = (type === 'input' ? '输入' : '输出') + ' #' + (i + 1);
+      });
+    }
+
+    function createIORow(type, index, data = {}) {
+      const addr = data.address || '';
+      const opts = (data.options || []).join(' ');
+      const isInput = type === 'input';
+      const addrPh = isInput ? 'file:///path/input.mp4 或 rtmp://...' : '/path/out.mp4 或 rtmp://...';
+      const optPh = isInput ? '-re -stream_loop -1' : '-c:v libx264 -c:a aac -f flv';
+      const block = document.createElement('div');
+      block.className = 'io-block';
+      block.dataset.ioType = type;
+      block.innerHTML = `
+        <div class="io-block-top">
+          <span>${isInput ? '输入' : '输出'} #${index + 1}</span>
+          <button type="button" class="btn btn-sm btn-danger io-remove">移除</button>
+        </div>
+        <div class="form-row">
+          <label>地址</label>
+          <input type="text" class="io-address" placeholder="${escapeAttr(addrPh)}" value="${escapeAttr(addr)}">
+        </div>
+        <div class="form-row">
+          <label>${isInput ? '选项 (-i 前)' : '选项 (编解码/格式)'}</label>
+          <input type="text" class="io-options" placeholder="${escapeAttr(optPh)}" value="${escapeAttr(opts)}">
+        </div>`;
+      block.querySelector('.io-remove').addEventListener('click', () => {
+        const listId = isInput ? 'inputsList' : 'outputsList';
+        const list = document.getElementById(listId);
+        if (list.children.length <= 1) {
+          toast('至少保留一路' + (isInput ? '输入' : '输出'), 'error');
+          return;
+        }
+        block.remove();
+        renumberIOBlocks(listId, type);
+      });
+      return block;
+    }
+
+    function addInputRow(data) {
+      const list = document.getElementById('inputsList');
+      list.appendChild(createIORow('input', list.children.length, data || {}));
+    }
+
+    function addOutputRow(data) {
+      const list = document.getElementById('outputsList');
+      list.appendChild(createIORow('output', list.children.length, data || {}));
+    }
+
+    function clearIOList(listId) {
+      document.getElementById(listId).innerHTML = '';
+    }
+
+    function fillInputs(inputs) {
+      clearIOList('inputsList');
+      const rows = inputs?.length ? inputs : [{ address: '', options: [] }];
+      rows.forEach(i => addInputRow(i));
+    }
+
+    function fillOutputs(outputs) {
+      clearIOList('outputsList');
+      const rows = outputs?.length ? outputs : [{ address: '', options: [] }];
+      rows.forEach(o => addOutputRow(o));
+    }
+
+    function collectIO(listId) {
+      return [...document.getElementById(listId).querySelectorAll('.io-block')].map(block => ({
+        address: block.querySelector('.io-address').value.trim(),
+        options: parseOpts(block.querySelector('.io-options').value),
+      })).filter(row => row.address || row.options.length);
+    }
+
+    function initIOForm() {
+      fillInputs([{ address: '', options: [] }]);
+      fillOutputs([{ address: '', options: [] }]);
+    }
+
+    function renderTaskList(list, totalCount) {
+      const ul = document.getElementById('taskList');
+      ul.innerHTML = '';
+      const total = totalCount ?? list?.length ?? 0;
+      if (!list || list.length === 0) {
+        ul.innerHTML = total > 0
+          ? '<li class="task-item muted">无匹配任务，请调整筛选条件</li>'
+          : '<li class="task-item muted">暂无任务</li>';
+        return;
+      }
+      list.forEach(p => {
+        const state = p.state?.exec || '-';
+        const ref = p.config?.reference || '';
+        const inAddr = formatIOAddresses(p.config?.input);
+        const outAddr = formatIOAddresses(p.config?.output);
+        const multiHint = (p.config?.input?.length > 1 || p.config?.output?.length > 1)
+          ? ` <span class="muted">(${p.config?.input?.length || 0}→${p.config?.output?.length || 0})</span>`
+          : '';
+        const li = document.createElement('li');
+        li.className = 'task-item';
+        li.dataset.id = p.id;
+        li.innerHTML = `
+          <div class="row-top">
+            <div class="info">
+              <div class="id-row">
+                <span class="id" title="${escapeAttr(p.id)}">${escapeHtml(shortId(p.id))}</span>
+                <button type="button" class="btn btn-sm btn-secondary" data-action="copy-id" data-copy="${escapeAttr(p.id)}">复制 ID</button>
+                ${ref ? `<span class="ref-badge">${escapeHtml(ref)}</span>` : ''}
+              </div>
+              <div class="addr">${escapeHtml(inAddr)} → ${escapeHtml(outAddr)}${multiHint}</div>
+            </div>
+            <span class="state state-${state}">${escapeHtml(state)}</span>
+          </div>
+          ${renderMetrics(p.state)}
+          <div class="actions">
+            ${actionBtn('start', '启动', 'btn-primary', state)}
+            ${actionBtn('stop', '停止', 'btn-warning', state)}
+            ${actionBtn('restart', '重启', 'btn-secondary', state)}
+            <button class="btn btn-sm btn-secondary" data-action="state">状态</button>
+            <button class="btn btn-sm btn-secondary" data-action="command">命令</button>
+            <button class="btn btn-sm btn-secondary" data-action="copy-cmd">复制命令</button>
+            <button class="btn btn-sm btn-secondary" data-action="report">日志</button>
+            <button class="btn btn-sm btn-secondary" data-action="duplicate">复制配置</button>
+            <button class="btn btn-sm btn-secondary" data-action="edit">编辑</button>
+            <button class="btn btn-sm btn-danger" data-action="delete">删除</button>
+          </div>`;
+        ul.appendChild(li);
+      });
+    }
+
+    function loadProcesses(silent) {
+      const ref = document.getElementById('filterReference')?.value.trim();
+      let path = '/api/v3/process?filter=config,state';
+      if (ref) path += '&reference=' + encodeURIComponent(ref);
+      return api(path)
+        .then(list => {
+          lastTaskList = list || [];
+          applyFiltersAndRender();
+          if (!silent) toast('列表已刷新', 'success');
+        })
+        .catch(e => {
+          document.getElementById('taskList').innerHTML = '<li class="task-item err">' + escapeHtml(e.message) + '</li>';
+          if (!silent) toast(e.message, 'error');
+        });
+    }
+
+    function setAutoRefresh(on) {
+      autoRefresh = on;
+      const btn = document.getElementById('autoRefreshBtn');
+      const dot = document.getElementById('pollDot');
+      const label = document.getElementById('pollLabel');
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      if (on) {
+        const tick = () => {
+          loadProcesses(true);
+          loadSummary();
+        };
+        tick();
+        pollTimer = setInterval(tick, currentPollInterval());
+        btn.textContent = '关闭自动刷新';
+        dot.classList.add('active');
+        label.textContent = sseConnected
+          ? `SSE 已连接，兜底刷新 ${POLL_SLOW / 1000}s`
+          : `自动刷新 ${POLL_FAST / 1000}s`;
+      } else {
+        btn.textContent = '开启自动刷新';
+        dot.classList.remove('active');
+        label.textContent = '自动刷新已暂停';
+      }
+    }
+
+    function toggleAutoRefresh() {
+      setAutoRefresh(!autoRefresh);
+    }
+
+    document.getElementById('taskList').addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const li = btn.closest('.task-item');
+      if (!li?.dataset.id) return;
+      const id = li.dataset.id;
+      const action = btn.dataset.action;
+      if (action === 'copy-id') {
+        copyText(btn.dataset.copy || id);
+        return;
+      }
+      if (action === 'copy-cmd') {
+        copyTaskCommand(id, btn);
+        return;
+      }
+      if (action === 'start' || action === 'stop' || action === 'restart') {
+        if (btn.disabled) return;
+        cmd(id, action, btn);
+      }
+      else if (action === 'state') showState(id);
+      else if (action === 'command') showCommand(id);
+      else if (action === 'report') showReport(id);
+      else if (action === 'duplicate') duplicateTask(id);
+      else if (action === 'edit') openEdit(id);
+      else if (action === 'delete') delProcess(id);
+    });
+
+    ['filterReference', 'filterTaskId'].forEach(id => {
+      document.getElementById(id)?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') applyFilters();
+      });
+    });
+    document.getElementById('filterState')?.addEventListener('change', () => applyFiltersAndRender());
+
     function parseOpts(s) {
       return s ? s.trim().split(/\s+/).filter(Boolean) : [];
     }
+
     function getFormPayload() {
-      const inputAddr = document.getElementById('inputAddr').value.trim();
-      const outputAddr = document.getElementById('outputAddr').value.trim();
-      const inputOptions = parseOpts(document.getElementById('inputOptions').value);
-      const transcodeOptions = parseOpts(document.getElementById('transcodeOptions').value);
-      const outputOptions = parseOpts(document.getElementById('outputOptions').value);
-      const outputOpts = transcodeOptions.length ? transcodeOptions : ['-c:v', 'libx264', '-c:a', 'aac'];
-      if (outputOptions.length) outputOpts.push(...outputOptions);
+      const inputs = collectIO('inputsList');
+      const outputs = collectIO('outputsList');
+      const normalizedOutputs = outputs.map(o => ({ ...o, options: [...o.options] }));
+      if (normalizedOutputs.length === 1 && normalizedOutputs[0].options.length === 0) {
+        normalizedOutputs[0].options = ['-c:v', 'libx264', '-c:a', 'aac'];
+      }
+      const reconnectDelay = parseInt(document.getElementById('taskReconnectDelay').value, 10);
+      const staleTimeout = parseInt(document.getElementById('taskStaleTimeout').value, 10);
+      const limitCPU = parseFloat(document.getElementById('limitCPU').value);
+      const limitMem = parseInt(document.getElementById('limitMemory').value, 10);
+      const limitWait = parseInt(document.getElementById('limitWaitFor').value, 10);
       return {
-        input: [{ address: inputAddr, options: inputOptions }],
-        output: [{ address: outputAddr, options: outputOpts }],
-        options: [],
-        autostart: false
+        reference: document.getElementById('taskReference').value.trim(),
+        input: inputs,
+        output: normalizedOutputs,
+        options: parseOpts(document.getElementById('globalOptions').value),
+        autostart: document.getElementById('taskAutostart').checked,
+        reconnect: document.getElementById('taskReconnect').checked,
+        reconnect_delay_seconds: isNaN(reconnectDelay) ? 0 : reconnectDelay,
+        stale_timeout_seconds: isNaN(staleTimeout) ? 0 : staleTimeout,
+        limits: {
+          cpu_usage: isNaN(limitCPU) ? 0 : limitCPU,
+          memory_mbytes: isNaN(limitMem) ? 0 : limitMem,
+          waitfor_seconds: isNaN(limitWait) ? 0 : limitWait,
+        }
       };
     }
+
     function resetForm() {
       document.getElementById('editId').value = '';
       document.getElementById('formTitle').textContent = '添加转码任务';
       document.getElementById('submitBtn').textContent = '添加';
       document.getElementById('cancelEditBtn').style.display = 'none';
-      document.getElementById('inputAddr').value = '';
-      document.getElementById('inputOptions').value = '';
-      document.getElementById('outputAddr').value = '';
-      document.getElementById('transcodeOptions').value = '';
-      document.getElementById('outputOptions').value = '';
+      document.getElementById('globalOptions').value = '';
+      document.getElementById('taskReference').value = '';
+      document.getElementById('taskAutostart').checked = false;
+      document.getElementById('taskReconnect').checked = false;
+      document.getElementById('taskReconnectDelay').value = '';
+      document.getElementById('taskStaleTimeout').value = '';
+      document.getElementById('limitCPU').value = '';
+      document.getElementById('limitMemory').value = '';
+      document.getElementById('limitWaitFor').value = '';
+      initIOForm();
     }
+
     function submitProcess() {
       const editId = document.getElementById('editId').value.trim();
       const payload = getFormPayload();
-      if (!payload.input[0].address || !payload.output[0].address) {
-        alert('请填写输入和输出地址');
+      if (!payload.input.length || !payload.output.length) {
+        toast('请至少填写一路输入和一路输出地址', 'error');
         return;
       }
-      if (editId) {
-        api('/api/v3/process/' + editId, {
-          method: 'PUT',
-          body: JSON.stringify(payload)
-        }).then(() => {
-          resetForm();
-          loadProcesses();
-        }).catch(e => alert(e.message));
-      } else {
-        api('/api/v3/process', {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        }).then(() => {
-          resetForm();
-          loadProcesses();
-        }).catch(e => alert(e.message));
+      if (payload.input.some(i => !i.address) || payload.output.some(o => !o.address)) {
+        toast('每路输入/输出均需填写地址', 'error');
+        return;
       }
+      const submitBtn = document.getElementById('submitBtn');
+      withBusy(submitBtn, '提交中…', () => {
+        const req = editId
+          ? api('/api/v3/process/' + editId, { method: 'PUT', body: JSON.stringify(payload) })
+          : api('/api/v3/process', { method: 'POST', body: JSON.stringify(payload) });
+        return req.then(() => {
+          resetForm();
+          loadProcesses(true);
+          toast(editId ? '任务已更新' : '任务已添加', 'success');
+        }).catch(e => { toast(e.message, 'error'); });
+      });
     }
-    function cancelEdit() {
-      resetForm();
+
+    function cancelEdit() { resetForm(); }
+
+    function fillFormFromConfig(cfg, editId) {
+      document.getElementById('editId').value = editId || '';
+      document.getElementById('formTitle').textContent = editId ? '编辑任务 - ' + editId : '添加转码任务';
+      document.getElementById('submitBtn').textContent = editId ? '保存' : '添加';
+      document.getElementById('cancelEditBtn').style.display = editId ? 'inline-block' : 'none';
+      fillInputs(cfg.input);
+      fillOutputs(cfg.output);
+      document.getElementById('globalOptions').value = (cfg.options || []).join(' ');
+      document.getElementById('taskReference').value = cfg.reference || '';
+      document.getElementById('taskAutostart').checked = !!cfg.autostart;
+      document.getElementById('taskReconnect').checked = !!cfg.reconnect;
+      document.getElementById('taskReconnectDelay').value = cfg.reconnect_delay_seconds || '';
+      document.getElementById('taskStaleTimeout').value = cfg.stale_timeout_seconds || '';
+      document.getElementById('limitCPU').value = cfg.limits?.cpu_usage || '';
+      document.getElementById('limitMemory').value = cfg.limits?.memory_mbytes || '';
+      document.getElementById('limitWaitFor').value = cfg.limits?.waitfor_seconds || '';
     }
-    function splitOutputOptions(opts) {
-      if (!opts || !opts.length) return { transcode: [], format: [] };
-      const idx = opts.indexOf('-f');
-      if (idx >= 0 && idx + 1 < opts.length) {
-        return {
-          transcode: opts.slice(0, idx),
-          format: opts.slice(idx, idx + 2)
-        };
-      }
-      return { transcode: opts, format: [] };
-    }
+
     function openEdit(id) {
       api('/api/v3/process/' + id + '/config').then(cfg => {
-        const inp = cfg.input?.[0];
-        const out = cfg.output?.[0];
-        const { transcode, format } = splitOutputOptions(out?.options);
-        document.getElementById('editId').value = id;
-        document.getElementById('formTitle').textContent = '编辑任务 - ' + id;
-        document.getElementById('submitBtn').textContent = '保存';
-        document.getElementById('cancelEditBtn').style.display = 'inline-block';
-        document.getElementById('inputAddr').value = inp?.address || '';
-        document.getElementById('inputOptions').value = (inp?.options || []).join(' ');
-        document.getElementById('outputAddr').value = out?.address || '';
-        document.getElementById('transcodeOptions').value = transcode.join(' ');
-        document.getElementById('outputOptions').value = format.join(' ');
-      }).catch(e => alert(e.message));
+        fillFormFromConfig(cfg, id);
+        scrollToForm();
+      }).catch(e => toast(e.message, 'error'));
     }
-    function cmd(id, c) {
-      api('/api/v3/process/' + id + '/command', {
+
+    function duplicateTask(id) {
+      api('/api/v3/process/' + id + '/config').then(cfg => {
+        fillFormFromConfig(cfg, '');
+        scrollToForm();
+        toast('已复制任务配置，确认后可添加新任务', 'info');
+      }).catch(e => toast(e.message, 'error'));
+    }
+
+    function copyTaskCommand(id, btn) {
+      withBusy(btn, '…', () => api('/api/v3/process/' + id + '/state')
+        .then(s => copyText('ffmpeg ' + (s.command || []).join(' ')))
+        .catch(e => { toast(e.message, 'error'); }));
+    }
+
+    function cmd(id, c, btn) {
+      withBusy(btn, '…', () => api('/api/v3/process/' + id + '/command', {
         method: 'PUT',
         body: JSON.stringify({ command: c })
-      }).then(() => loadProcesses()).catch(e => alert(e.message));
+      }).then(() => {
+        loadProcesses(true);
+        toast('命令已执行: ' + c, 'success');
+        if (!autoRefresh) setAutoRefresh(true);
+      }).catch(e => { toast(e.message, 'error'); }));
     }
+
     function delProcess(id) {
       if (!confirm('确定删除该任务？')) return;
-      api('/api/v3/process/' + id, { method: 'DELETE' })
-        .then(() => loadProcesses())
-        .catch(e => alert(e.message));
+      const btn = document.querySelector(`.task-item[data-id="${CSS.escape(id)}"] [data-action="delete"]`);
+      withBusy(btn, '…', () => api('/api/v3/process/' + id, { method: 'DELETE' })
+        .then(() => { loadProcesses(true); toast('任务已删除', 'success'); })
+        .catch(e => { toast(e.message, 'error'); }));
     }
+
     function showState(id) {
       api('/api/v3/process/' + id + '/state').then(s => {
         let html = `<div class="progress-grid">`;
-        html += `<div class="progress-item">状态: <span>${s.exec || '-'}</span></div>`;
-        html += `<div class="progress-item">运行时间: <span>${s.runtime_seconds ?? 0}s</span></div>`;
-        html += `<div class="progress-item">CPU: <span>${(s.cpu_usage != null && s.cpu_usage > 0) ? s.cpu_usage.toFixed(1) + '%' : '-'}</span></div>`;
-        html += `<div class="progress-item">内存: <span>${(s.memory_bytes != null && s.memory_bytes > 0) ? (s.memory_bytes/1024/1024).toFixed(1) + ' MB' : '-'}</span></div>`;
+        html += `<div class="progress-item">状态: <span>${escapeHtml(s.exec || '-')}</span></div>`;
+        html += `<div class="progress-item">运行时间: <span>${formatRuntime(s.runtime_seconds)}</span></div>`;
+        html += `<div class="progress-item">CPU: <span>${s.cpu_usage > 0 ? s.cpu_usage.toFixed(1) + '%' : '-'}</span></div>`;
+        html += `<div class="progress-item">内存: <span>${formatBytes(s.memory_bytes)}</span></div>`;
         const prog = s.progress || {};
         const hasProg = prog.frame > 0 || prog.speed > 0 || prog.time_seconds > 0 || prog.size_bytes > 0;
         html += `<div class="progress-item">帧数: <span>${hasProg ? prog.frame : '-'}</span></div>`;
         html += `<div class="progress-item">速度: <span>${hasProg && prog.speed ? prog.speed + 'x' : '-'}</span></div>`;
         html += `<div class="progress-item">已处理时长: <span>${hasProg && prog.time_seconds ? prog.time_seconds.toFixed(1) + 's' : '-'}</span></div>`;
         html += `<div class="progress-item">输出大小: <span>${hasProg && prog.size_bytes ? (prog.size_bytes/1024/1024).toFixed(2) + ' MB' : '-'}</span></div>`;
+        if (s.reconnect_seconds >= 0) {
+          html += `<div class="progress-item">重连倒计时: <span>${s.reconnect_seconds}s</span></div>`;
+        }
+        if (s.cpu_limit_usage > 0 || s.memory_limit_bytes > 0) {
+          html += `<div class="progress-item">资源上限: <span>CPU ${s.cpu_limit_usage || '-'}% / 内存 ${s.memory_limit_bytes ? (s.memory_limit_bytes/1024/1024).toFixed(0)+'MB' : '-'}</span></div>`;
+        }
+        if (s.counts) {
+          html += `<div class="progress-item" style="grid-column:1/-1">状态计数: <span>运行${s.counts.running} 失败${s.counts.failed} 完成${s.counts.finished}</span></div>`;
+        }
         html += `</div>`;
-        const fullCmd = 'ffmpeg ' + (s.command || []).join(' ');
-        html += `<div class="progress-item" style="margin-top:0.5rem"><b>完整命令:</b></div><pre class="cmd-pre" style="margin-top:0.25rem;white-space:pre-wrap;word-break:break-all;user-select:all">${escapeHtml(fullCmd)}</pre>`;
+        if (s.last_logline) {
+          html += `<div class="progress-item"><b>最后一行日志:</b></div>`;
+          html += `<pre style="margin-top:0.25rem;font-size:0.75rem">${escapeHtml(s.last_logline)}</pre>`;
+        }
+        html += `<div class="progress-item" style="margin-top:0.5rem"><b>完整命令:</b></div>`;
+        html += renderCommandPanel(s.command);
         openModal('状态 - ' + id, html);
-      }).catch(e => openModal('错误', '<span class="err">' + e.message + '</span>'));
+      }).catch(e => openModal('错误', '<span class="err">' + escapeHtml(e.message) + '</span>'));
     }
+
     function showCommand(id) {
       api('/api/v3/process/' + id + '/state').then(s => {
-        const fullCmd = 'ffmpeg ' + (s.command || []).join(' ');
-        const html = `<pre class="cmd-pre" style="white-space:pre-wrap;word-break:break-all;user-select:all;max-height:60vh;overflow:auto">${escapeHtml(fullCmd)}</pre>
-          <p class="muted" style="margin-top:0.5rem;font-size:0.75rem">可全选复制以在终端验证</p>`;
+        const html = renderCommandPanel(s.command)
+          + `<p class="muted" style="margin-top:0.5rem;font-size:0.75rem">复制后可在终端直接验证</p>`;
         openModal('FFmpeg 完整命令 - ' + id, html);
-      }).catch(e => openModal('错误', '<span class="err">' + e.message + '</span>'));
+      }).catch(e => openModal('错误', '<span class="err">' + escapeHtml(e.message) + '</span>'));
     }
+
     function formatLogTs(ts) {
       if (!ts) return '-';
-      if (ts.includes('-') && ts.includes(':')) return ts; // 已是可读格式
+      if (ts.includes('-') && ts.includes(':')) return ts;
       const n = parseInt(ts, 10);
       if (isNaN(n)) return ts;
       const d = new Date(n * 1000);
       const pad = (x, w = 2) => String(x).padStart(w, '0');
-      const ms = d.getMilliseconds();
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${String(ms).padStart(3,'0')}`;
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${String(d.getMilliseconds()).padStart(3,'0')}`;
     }
+
+    function classifyLogLine(line) {
+      if (/frame=|speed=|time=/.test(line)) return 'log-progress';
+      if (/error|Error|failed|Invalid/i.test(line)) return 'log-error';
+      return '';
+    }
+
+    function renderLogLines(log) {
+      let html = '';
+      (log || []).forEach(([ts, line]) => {
+        const cls = classifyLogLine(line);
+        html += `<div class="log-line ${cls}"><span class="log-ts">${formatLogTs(ts)}</span>${escapeHtml(line)}</div>`;
+      });
+      return html || '<span class="muted">暂无日志</span>';
+    }
+
+    function stopLogTail() {
+      if (logTailTimer) { clearInterval(logTailTimer); logTailTimer = null; }
+      logTailId = null;
+    }
+
+    function startLogTail(id) {
+      stopLogTail();
+      logTailId = id;
+      const body = document.getElementById('modalBody');
+      function refresh() {
+        api('/api/v3/process/' + id + '/report').then(r => {
+          if (logTailId !== id) return;
+          body.innerHTML = renderLogLines(r.log);
+          body.scrollTop = body.scrollHeight;
+        }).catch(() => {});
+      }
+      refresh();
+      logTailTimer = setInterval(refresh, LOG_TAIL_INTERVAL);
+    }
+
     function showReport(id) {
       api('/api/v3/process/' + id + '/report').then(r => {
-        let html = '';
-        (r.log || []).forEach(([ts, line]) => {
-          html += `<div class="log-line"><span class="log-ts">${formatLogTs(ts)}</span>${escapeHtml(line)}</div>`;
-        });
-        openModal('日志 - ' + id, html || '<span class="muted">暂无日志</span>');
-      }).catch(e => openModal('错误', '<span class="err">' + e.message + '</span>'));
+        openModal('日志 - ' + id + ' (实时)', renderLogLines(r.log));
+        startLogTail(id);
+      }).catch(e => openModal('错误', '<span class="err">' + escapeHtml(e.message) + '</span>'));
     }
+
     function loadSkills() {
       api('/api/v3/skills').then(s => {
         const ff = s.ffmpeg || {};
-        let html = `<div class="skills-version">FFmpeg ${ff.version || '-'}</div>`;
+        let html = `<div class="skills-version">FFmpeg ${escapeHtml(ff.version || '-')}</div>`;
         if (ff.compiler) html += `<div class="skills-section"><h4>编译器</h4><div>${escapeHtml(ff.compiler)}</div></div>`;
         if (ff.configuration) html += `<div class="skills-section"><h4>配置</h4><pre style="font-size:0.7rem;max-height:80px;overflow:auto">${escapeHtml(ff.configuration)}</pre></div>`;
         if (ff.libraries?.length) {
@@ -437,42 +1382,55 @@
         html += `<div class="skills-section"><h4>硬件加速 (${hw.length})</h4><div class="skills-grid">`;
         hw.forEach(h => { html += `<span class="skills-chip">${escapeHtml(h.id || h.name)}</span>`; });
         html += `</div></div>`;
-        const vc = s.codecs?.video || [], ac = s.codecs?.audio || [], sc = s.codecs?.subtitle || [];
-        html += `<div class="skills-section"><h4>编解码器</h4>`;
-        html += `<div>视频: ${vc.length} 个 | 音频: ${ac.length} 个 | 字幕: ${sc.length} 个</div>`;
-        const vEnc = [...new Set(vc.flatMap(c => (c.encoders||[]).filter(Boolean)))].slice(0, 20);
-        html += `<div style="margin-top:0.3rem">常用视频编码: ${vEnc.map(e=>`<span class="skills-chip">${e}</span>`).join(' ')}</div>`;
-        const aEnc = [...new Set(ac.flatMap(c => (c.encoders||[]).filter(Boolean)))].slice(0, 15);
-        html += `<div style="margin-top:0.3rem">常用音频编码: ${aEnc.map(e=>`<span class="skills-chip">${e}</span>`).join(' ')}</div>`;
-        html += `</div>`;
-        const pin = s.protocols?.input || [], pout = s.protocols?.output || [];
-        html += `<div class="skills-section"><h4>协议</h4>`;
-        html += `<div><b>输入:</b> ${pin.map(p=>p.id||p.name).join(', ')}</div>`;
-        html += `<div style="margin-top:0.3rem"><b>输出:</b> ${pout.map(p=>p.id||p.name).join(', ')}</div>`;
-        html += `</div>`;
-        const dmx = s.formats?.demuxers || [], mux = s.formats?.muxers || [];
-        if (dmx.length || mux.length) {
-          html += `<div class="skills-section"><h4>格式</h4>`;
-          html += `<div>解复用: ${dmx.length} 个 | 复用: ${mux.length} 个</div>`;
-          html += `</div>`;
-        }
         openModal('FFmpeg Skills', html);
-      }).catch(e => openModal('错误', '<span class="err">' + e.message + '</span>'));
+      }).catch(e => openModal('错误', '<span class="err">' + escapeHtml(e.message) + '</span>'));
     }
+
     function escapeHtml(s) {
       const d = document.createElement('div');
       d.textContent = s;
       return d.innerHTML;
     }
+
     function openModal(title, body) {
       document.getElementById('modalTitle').textContent = title;
       document.getElementById('modalBody').innerHTML = body;
       document.getElementById('modal').style.display = 'flex';
+      modalOpen = true;
     }
+
     function closeModal() {
+      stopLogTail();
       document.getElementById('modal').style.display = 'none';
+      modalOpen = false;
     }
-    loadProcesses();
+
+    document.getElementById('modal').addEventListener('click', e => {
+      if (e.target.id === 'modal') closeModal();
+    });
+
+    document.getElementById('modalBody').addEventListener('click', e => {
+      const btn = e.target.closest('.cmd-copy-btn');
+      if (!btn) return;
+      const pre = document.getElementById(btn.dataset.copyTarget);
+      if (pre) copyText(pre.textContent);
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modalOpen) closeModal();
+    });
+
+    initFiltersFromUrl();
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    if (apiKeyInput) apiKeyInput.value = getApiKey();
+
+    initIOForm();
+    loadHealth();
+    loadSummary();
+    loadHooksInfo();
+    loadProcesses(true);
+    connectEventStream();
+    setAutoRefresh(true);
   </script>
 </body>
 </html>

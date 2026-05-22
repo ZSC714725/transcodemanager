@@ -1,7 +1,7 @@
 # TranscodeManager - 多阶段构建，含 FFmpeg 支持
 
 # 阶段 1: 编译 Go 应用
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /build
 
@@ -20,15 +20,19 @@ FROM jrottenberg/ffmpeg:8.0-alpine
 
 WORKDIR /app
 
-# 从 builder 复制二进制
+ENV GIN_MODE=release
+
+# HTTPS 拉流所需 CA 证书；wget 用于 HEALTHCHECK
+RUN apk add --no-cache ca-certificates wget
+
 COPY --from=builder /build/transcodemanager .
-# 复制前端静态资源
 COPY --from=builder /build/web ./web
-# 可选：复制配置示例
 COPY --from=builder /build/config.yaml .
 
 EXPOSE 8080
 
-# 容器内监听 0.0.0.0 便于外部访问
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:8080/health/live > /dev/null || exit 1
+
 ENTRYPOINT ["./transcodemanager"]
-CMD ["-bind", "0.0.0.0:8080", "-ffmpeg", "ffmpeg"]
+CMD ["-config", "/app/config.yaml"]

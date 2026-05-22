@@ -11,22 +11,32 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ZSC714725/transcodemanager/internal/events"
 	"github.com/ZSC714725/transcodemanager/internal/ffmpeg"
+	"github.com/ZSC714725/transcodemanager/internal/logger"
+	"github.com/ZSC714725/transcodemanager/internal/process"
 	"github.com/ZSC714725/transcodemanager/internal/task"
 )
 
 // Handler holds dependencies
 type Handler struct {
-	store  task.Store
-	ffmpeg ffmpeg.FFmpeg
+	store      task.Store
+	ffmpeg     ffmpeg.FFmpeg
+	log        logger.Logger
+	dispatcher *events.Dispatcher
 }
 
 // NewHandler creates API handler
-func NewHandler(store task.Store, ff ffmpeg.FFmpeg) *Handler {
-	return &Handler{store: store, ffmpeg: ff}
+func NewHandler(store task.Store, ff ffmpeg.FFmpeg, log logger.Logger, dispatcher *events.Dispatcher) *Handler {
+	return &Handler{store: store, ffmpeg: ff, log: log, dispatcher: dispatcher}
 }
 
-func errResp(c *gin.Context, code int, msg, detail string) {
+func (h *Handler) errResp(c *gin.Context, code int, msg, detail string) {
+	if detail != "" {
+		h.log.Error("API %d %s %s | request_id=%s detail=%s", code, c.Request.Method, c.Request.URL.Path, requestIDFromContext(c), detail)
+	} else {
+		h.log.Error("API %d %s %s | request_id=%s msg=%s", code, c.Request.Method, c.Request.URL.Path, requestIDFromContext(c), msg)
+	}
 	c.JSON(code, ErrorResponse{Code: code, Message: msg, Detail: detail})
 }
 
@@ -34,12 +44,12 @@ func errResp(c *gin.Context, code int, msg, detail string) {
 func (h *Handler) AddProcess(c *gin.Context) {
 	var req ProcessConfigRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		errResp(c, http.StatusBadRequest, "Invalid JSON", err.Error())
+		h.errResp(c, http.StatusBadRequest, "Invalid JSON", err.Error())
 		return
 	}
 
 	if len(req.Input) == 0 || len(req.Output) == 0 {
-		errResp(c, http.StatusBadRequest, "At least one input and one output required", "")
+		h.errResp(c, http.StatusBadRequest, "At least one input and one output required", "")
 		return
 	}
 
@@ -49,14 +59,14 @@ func (h *Handler) AddProcess(c *gin.Context) {
 	t, err := h.store.Add(cfg)
 	if err != nil {
 		if err == task.ErrTaskExists {
-			errResp(c, http.StatusBadRequest, "Task exists", err.Error())
+			h.errResp(c, http.StatusBadRequest, "Task exists", err.Error())
 			return
 		}
 		if err == task.ErrInvalidInputAddress || err == task.ErrInvalidOutputAddress {
-			errResp(c, http.StatusBadRequest, "Invalid address", err.Error())
+			h.errResp(c, http.StatusBadRequest, "Invalid address", err.Error())
 			return
 		}
-		errResp(c, http.StatusBadRequest, "Invalid config", err.Error())
+		h.errResp(c, http.StatusBadRequest, "Invalid config", err.Error())
 		return
 	}
 
@@ -88,6 +98,11 @@ func (h *Handler) ListProcesses(c *gin.Context) {
 	c.JSON(http.StatusOK, procs)
 }
 
+// ProcessSummary GET /api/v3/process/summary
+func (h *Handler) ProcessSummary(c *gin.Context) {
+	c.JSON(http.StatusOK, h.store.Summary())
+}
+
 // GetProcess GET /api/v3/process/:id
 func (h *Handler) GetProcess(c *gin.Context) {
 	id := c.Param("id")
@@ -95,7 +110,7 @@ func (h *Handler) GetProcess(c *gin.Context) {
 
 	t, err := h.store.Get(id)
 	if err != nil {
-		errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
+		h.errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
 		return
 	}
 
@@ -107,12 +122,12 @@ func (h *Handler) DeleteProcess(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := h.store.Stop(id); err != nil {
-		errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
+		h.errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
 		return
 	}
 
 	if err := h.store.Delete(id); err != nil {
-		errResp(c, http.StatusInternalServerError, "Delete failed", err.Error())
+		h.errResp(c, http.StatusInternalServerError, "Delete failed", err.Error())
 		return
 	}
 
@@ -125,12 +140,12 @@ func (h *Handler) UpdateProcess(c *gin.Context) {
 
 	var req ProcessConfigRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		errResp(c, http.StatusBadRequest, "Invalid JSON", err.Error())
+		h.errResp(c, http.StatusBadRequest, "Invalid JSON", err.Error())
 		return
 	}
 
 	if len(req.Input) == 0 || len(req.Output) == 0 {
-		errResp(c, http.StatusBadRequest, "At least one input and one output required", "")
+		h.errResp(c, http.StatusBadRequest, "At least one input and one output required", "")
 		return
 	}
 
@@ -140,10 +155,10 @@ func (h *Handler) UpdateProcess(c *gin.Context) {
 	t, err := h.store.Update(id, cfg)
 	if err != nil {
 		if err == task.ErrNotFound {
-			errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
+			h.errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
 			return
 		}
-		errResp(c, http.StatusBadRequest, "Invalid config", err.Error())
+		h.errResp(c, http.StatusBadRequest, "Invalid config", err.Error())
 		return
 	}
 
@@ -156,7 +171,7 @@ func (h *Handler) GetConfig(c *gin.Context) {
 
 	t, err := h.store.Get(id)
 	if err != nil {
-		errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
+		h.errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
 		return
 	}
 
@@ -169,20 +184,37 @@ func (h *Handler) GetState(c *gin.Context) {
 
 	t, err := h.store.Get(id)
 	if err != nil {
-		errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
+		h.errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
 		return
 	}
 
 	status := t.Status()
 
+	state := buildProcessState(t, status)
+
+	c.JSON(http.StatusOK, state)
+}
+
+func buildProcessState(t *task.Task, status process.Status) ProcessState {
 	state := ProcessState{
-		Order:     status.Order,
-		State:     status.State,
-		Runtime:   int64(status.Duration.Seconds()),
-		Reconnect: -1,
-		Memory:    status.Memory.Current,
-		CPU:       status.CPU.Current,
-		Command:   t.Config.CreateCommand(),
+		Order:       status.Order,
+		State:       status.State,
+		Runtime:     int64(status.Duration.Seconds()),
+		Reconnect:   status.ReconnectSeconds,
+		LastLog:     status.LastLog,
+		Memory:      status.Memory.Current,
+		CPU:         status.CPU.Current,
+		MemoryLimit: status.Memory.Limit,
+		CPULimit:    status.CPU.Limit,
+		Command:     t.Config.CreateCommand(),
+		Counts: &StateCounts{
+			Finished:  status.States.Finished,
+			Starting:  status.States.Starting,
+			Running:   status.States.Running,
+			Finishing: status.States.Finishing,
+			Failed:    status.States.Failed,
+			Killed:    status.States.Killed,
+		},
 	}
 
 	prog := t.Progress()
@@ -196,7 +228,7 @@ func (h *Handler) GetState(c *gin.Context) {
 		Quantizer: prog.Quantizer,
 	}
 
-	c.JSON(http.StatusOK, state)
+	return state
 }
 
 // GetReport GET /api/v3/process/:id/report
@@ -205,7 +237,7 @@ func (h *Handler) GetReport(c *gin.Context) {
 
 	t, err := h.store.Get(id)
 	if err != nil {
-		errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
+		h.errResp(c, http.StatusNotFound, "Unknown process ID", err.Error())
 		return
 	}
 
@@ -229,7 +261,7 @@ func (h *Handler) Command(c *gin.Context) {
 
 	var req CommandRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		errResp(c, http.StatusBadRequest, "Invalid JSON", err.Error())
+		h.errResp(c, http.StatusBadRequest, "Invalid JSON", err.Error())
 		return
 	}
 
@@ -242,12 +274,12 @@ func (h *Handler) Command(c *gin.Context) {
 	case "restart":
 		err = h.store.Restart(id)
 	default:
-		errResp(c, http.StatusBadRequest, "Unknown command", "Known: start, stop, restart")
+		h.errResp(c, http.StatusBadRequest, "Unknown command", "Known: start, stop, restart")
 		return
 	}
 
 	if err != nil {
-		errResp(c, http.StatusBadRequest, "Command failed", err.Error())
+		h.errResp(c, http.StatusBadRequest, "Command failed", err.Error())
 		return
 	}
 
@@ -263,7 +295,7 @@ func (h *Handler) Skills(c *gin.Context) {
 // ReloadSkills POST /api/v3/skills/reload
 func (h *Handler) ReloadSkills(c *gin.Context) {
 	if err := h.ffmpeg.ReloadSkills(); err != nil {
-		errResp(c, http.StatusInternalServerError, "Reload failed", err.Error())
+		h.errResp(c, http.StatusInternalServerError, "Reload failed", err.Error())
 		return
 	}
 	sk := h.ffmpeg.Skills()
@@ -338,21 +370,8 @@ func taskToProcess(t *task.Task, filter string) Process {
 	}
 
 	if includeState {
-		status := t.Status()
-		p.State = &ProcessState{
-			Order:     status.Order,
-			State:     status.State,
-			Runtime:   int64(status.Duration.Seconds()),
-			Reconnect: -1,
-			Memory:    status.Memory.Current,
-			CPU:       status.CPU.Current,
-			Command:   t.Config.CreateCommand(),
-		}
-		prog := t.Progress()
-		p.State.Progress = &Progress{
-			Frame: prog.Frame, Size: prog.Size, Time: prog.Time, Speed: prog.Speed,
-			Drop: prog.Drop, Dup: prog.Dup, Quantizer: prog.Quantizer,
-		}
+		state := buildProcessState(t, t.Status())
+		p.State = &state
 	}
 
 	if includeReport {

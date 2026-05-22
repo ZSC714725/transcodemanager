@@ -37,6 +37,7 @@ type Config struct {
 	Reconnect      bool
 	ReconnectDelay time.Duration
 	StaleTimeout   time.Duration
+	Limits         LimitOptions
 	Parser         Parser
 	OnStart        func()
 	OnExit         func()
@@ -51,6 +52,8 @@ type Status struct {
 	Order    string
 	Duration time.Duration
 	Time     time.Time
+	LastLog  string
+	ReconnectSeconds int64 // -1 when not waiting to reconnect
 	CPU      struct {
 		Current float64
 		Limit   float64
@@ -124,6 +127,7 @@ type process struct {
 		enable bool
 		delay  time.Duration
 		timer  *time.Timer
+		at     time.Time
 		lock   sync.Mutex
 	}
 	killTimer     *time.Timer
@@ -145,7 +149,7 @@ func New(config Config) (Process, error) {
 		args:   config.Args,
 		parser: config.Parser,
 		logger: config.Logger,
-		limits: NewSysLimiter(),
+		limits: NewLimiter(config.Limits),
 	}
 
 	if len(p.binary) == 0 {
@@ -298,7 +302,18 @@ func (p *process) Status() Status {
 		Order:    order,
 		Duration: time.Since(stateTime),
 		Time:     stateTime,
+		LastLog:  p.lastLine,
 	}
+	s.ReconnectSeconds = -1
+	p.reconn.lock.Lock()
+	if !p.reconn.at.IsZero() {
+		remaining := int64(time.Until(p.reconn.at).Seconds())
+		if remaining < 0 {
+			remaining = 0
+		}
+		s.ReconnectSeconds = remaining
+	}
+	p.reconn.lock.Unlock()
 	s.CPU.Current = cpu
 	s.CPU.Limit = cpuLimit
 	s.Memory.Current = memory
@@ -350,6 +365,12 @@ func (p *process) start() error {
 
 	p.pid = int32(p.cmd.Process.Pid)
 	p.limits.Start(int(p.pid))
+	if sl, ok := p.limits.(*sysLimiter); ok {
+		sl.startEnforcement(func() {
+			p.logger.Info("resource limit exceeded, stopping process")
+			_ = p.stop(false)
+		})
+	}
 
 	p.setState(stateRunning)
 
@@ -451,6 +472,7 @@ func (p *process) reconnect() {
 	p.reconn.lock.Lock()
 	defer p.reconn.lock.Unlock()
 
+	p.reconn.at = time.Now().Add(p.reconn.delay)
 	p.reconn.timer = time.AfterFunc(p.reconn.delay, func() {
 		p.order.lock.Lock()
 		defer p.order.lock.Unlock()
@@ -466,6 +488,7 @@ func (p *process) unreconnect() {
 		p.reconn.timer.Stop()
 		p.reconn.timer = nil
 	}
+	p.reconn.at = time.Time{}
 }
 
 func (p *process) staler(ctx context.Context) {

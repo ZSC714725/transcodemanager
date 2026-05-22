@@ -32,6 +32,7 @@ type ProcessConfig struct {
 	Reconnect      bool
 	ReconnectDelay time.Duration
 	StaleTimeout   time.Duration
+	Limits         process.LimitOptions
 	Command        []string
 	Parser         process.Parser
 	Logger         logger.Logger
@@ -100,6 +101,7 @@ func (f *ffmpeg) New(config ProcessConfig) (process.Process, error) {
 		Reconnect:      config.Reconnect,
 		ReconnectDelay: config.ReconnectDelay,
 		StaleTimeout:   config.StaleTimeout,
+		Limits:         config.Limits,
 		Parser:         config.Parser,
 		Logger:         wrapLogger(config.Logger),
 		OnStart:        config.OnStart,

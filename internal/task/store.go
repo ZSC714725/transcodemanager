@@ -56,6 +56,15 @@ func (t *Task) IsRunning() bool {
 	return t.proc.IsRunning()
 }
 
+// Summary holds aggregated task counts.
+type Summary struct {
+	Total   int            `json:"total"`
+	ByState map[string]int `json:"by_state"`
+}
+
+// StateObserver is deprecated; use EventObserver.
+type StateObserver = EventObserver
+
 // Store manages tasks in memory
 type Store interface {
 	Add(config *Config) (*Task, error)
@@ -66,21 +75,66 @@ type Store interface {
 	Start(id string) error
 	Stop(id string) error
 	Restart(id string) error
+	StopAll()
+	Flush() error
+	Summary() Summary
 }
 
 type store struct {
-	ffmpeg ffmpeg.FFmpeg
-	logger logger.Logger
-	tasks  map[string]*Task
-	mu     sync.RWMutex
+	ffmpeg      ffmpeg.FFmpeg
+	logger      logger.Logger
+	observer    EventObserver
+	tasks       map[string]*Task
+	persistPath string
+	mu          sync.RWMutex
+}
+
+// StoreOptions optional store settings.
+type StoreOptions struct {
+	PersistPath string
 }
 
 // NewStore creates a task store
-func NewStore(ff ffmpeg.FFmpeg, log logger.Logger) Store {
-	return &store{
-		ffmpeg: ff,
-		logger: log,
-		tasks:  make(map[string]*Task),
+func NewStore(ff ffmpeg.FFmpeg, log logger.Logger, observer EventObserver, opts StoreOptions) Store {
+	s := &store{
+		ffmpeg:      ff,
+		logger:      log,
+		observer:    observer,
+		tasks:       make(map[string]*Task),
+		persistPath: opts.PersistPath,
+	}
+	if s.persistPath != "" {
+		if err := s.loadFromDisk(); err != nil {
+			log.Error("load persisted tasks: %v", err)
+		}
+	}
+	return s
+}
+
+func limitsFromConfig(cfg *Config) process.LimitOptions {
+	return process.LimitOptions{
+		CPUPercent: cfg.LimitCPU,
+		Memory:     cfg.LimitMemory,
+		WaitFor:    time.Duration(cfg.LimitWaitFor) * time.Second,
+	}
+}
+
+func (s *store) emit(event Event) {
+	if s.observer != nil {
+		s.observer.OnTaskEvent(event)
+	}
+}
+
+func (s *store) syncGauges() {
+	if syncer, ok := s.observer.(interface{ SyncTaskGauges() }); ok {
+		syncer.SyncTaskGauges()
+	}
+}
+
+func (s *store) makeStateChangeHandler(taskID, reference string) func(from, to string) {
+	return func(from, to string) {
+		s.logger.Info("task %s state %s -> %s", taskID, from, to)
+		s.emit(NewEvent(EventStateChange, taskID, reference, from, to, to))
 	}
 }
 
@@ -127,12 +181,11 @@ func (s *store) Add(config *Config) (*Task, error) {
 		Reconnect:      config.Reconnect,
 		ReconnectDelay: time.Duration(config.ReconnectDelay) * time.Second,
 		StaleTimeout:   time.Duration(config.StaleTimeout) * time.Second,
+		Limits:         limitsFromConfig(config),
 		Command:        config.CreateCommand(),
 		Parser:         parser,
 		Logger:         s.logger,
-		OnStateChange: func(from, to string) {
-			s.logger.Info("task %s state %s -> %s", config.ID, from, to)
-		},
+		OnStateChange:  s.makeStateChangeHandler(config.ID, config.Reference),
 	})
 	if err != nil {
 		return nil, err
@@ -143,11 +196,15 @@ func (s *store) Add(config *Config) (*Task, error) {
 
 	s.tasks[config.ID] = task
 
+	s.emit(NewEvent(EventCreated, config.ID, config.Reference, "", "", "finished"))
+
 	if config.Autostart {
 		go task.proc.Start()
 		task.Order = "start"
 	}
 
+	s.syncGauges()
+	s.saveAsync()
 	return task, nil
 }
 
@@ -222,12 +279,11 @@ func (s *store) Update(id string, config *Config) (*Task, error) {
 		Reconnect:      config.Reconnect,
 		ReconnectDelay: time.Duration(config.ReconnectDelay) * time.Second,
 		StaleTimeout:   time.Duration(config.StaleTimeout) * time.Second,
+		Limits:         limitsFromConfig(config),
 		Command:        config.CreateCommand(),
 		Parser:         parser,
 		Logger:         s.logger,
-		OnStateChange: func(from, to string) {
-			s.logger.Info("task %s state %s -> %s", id, from, to)
-		},
+		OnStateChange:  s.makeStateChangeHandler(id, config.Reference),
 	})
 	if err != nil {
 		return nil, err
@@ -243,6 +299,7 @@ func (s *store) Update(id string, config *Config) (*Task, error) {
 		t.Order = "start"
 	}
 
+	s.saveAsync()
 	return t, nil
 }
 
@@ -255,8 +312,13 @@ func (s *store) Delete(id string) error {
 		return ErrNotFound
 	}
 
+	state := t.proc.Status().State
+	s.emit(NewEvent(EventDeleted, id, t.Reference, "", "", state))
+
 	t.proc.Stop(true)
 	delete(s.tasks, id)
+	s.syncGauges()
+	s.saveAsync()
 	return nil
 }
 
@@ -283,4 +345,134 @@ func (s *store) Restart(id string) error {
 	}
 	t.proc.Stop(true)
 	return t.proc.Start()
+}
+
+func (s *store) StopAll() {
+	s.mu.RLock()
+	tasks := make([]*Task, 0, len(s.tasks))
+	for _, t := range s.tasks {
+		tasks = append(tasks, t)
+	}
+	s.mu.RUnlock()
+
+	for _, t := range tasks {
+		if t.proc.IsRunning() {
+			t.proc.Stop(true)
+		}
+	}
+}
+
+func (s *store) Summary() Summary {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	byState := make(map[string]int)
+	for _, t := range s.tasks {
+		state := t.proc.Status().State
+		byState[state]++
+	}
+	return Summary{
+		Total:   len(s.tasks),
+		ByState: byState,
+	}
+}
+
+func (s *store) loadFromDisk() error {
+	records, err := LoadPersistedTasks(s.persistPath)
+	if err != nil {
+		return err
+	}
+	for _, rec := range records {
+		if rec.Config == nil {
+			continue
+		}
+		cfg := rec.Config
+		cfg.ID = rec.ID
+		if _, err := s.restoreTask(cfg, rec.CreatedAt, rec.UpdatedAt, rec.Order); err != nil {
+			s.logger.Error("restore task %s: %v", rec.ID, err)
+		}
+	}
+	if len(records) > 0 {
+		s.logger.Info("restored %d tasks from %s", len(records), s.persistPath)
+	}
+	return nil
+}
+
+func (s *store) restoreTask(config *Config, createdAt, updatedAt int64, order string) (*Task, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, exists := s.tasks[config.ID]; exists {
+		return nil, ErrTaskExists
+	}
+
+	task := &Task{
+		ID:        config.ID,
+		Reference: config.Reference,
+		Config:    config,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+		Order:     order,
+	}
+	if task.Order == "" {
+		task.Order = "stop"
+	}
+
+	parser := s.ffmpeg.NewParser(s.logger, config.ID, config.Reference)
+	proc, err := s.ffmpeg.New(ffmpeg.ProcessConfig{
+		Reconnect:      config.Reconnect,
+		ReconnectDelay: time.Duration(config.ReconnectDelay) * time.Second,
+		StaleTimeout:   time.Duration(config.StaleTimeout) * time.Second,
+		Limits:         limitsFromConfig(config),
+		Command:        config.CreateCommand(),
+		Parser:         parser,
+		Logger:         s.logger,
+		OnStateChange:  s.makeStateChangeHandler(config.ID, config.Reference),
+	})
+	if err != nil {
+		return nil, err
+	}
+	task.proc = proc
+	task.parser = parser.(parse.Parser)
+	s.tasks[config.ID] = task
+	return task, nil
+}
+
+func (s *store) Flush() error {
+	if s.persistPath == "" {
+		return nil
+	}
+	s.mu.RLock()
+	records := make([]PersistedTask, 0, len(s.tasks))
+	for _, t := range s.tasks {
+		records = append(records, PersistedTask{
+			ID: t.ID, Config: t.Config,
+			CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt, Order: t.Order,
+		})
+	}
+	s.mu.RUnlock()
+	return SavePersistedTasks(s.persistPath, records)
+}
+
+func (s *store) saveAsync() {
+	if s.persistPath == "" {
+		return
+	}
+	go func() {
+		s.mu.RLock()
+		records := make([]PersistedTask, 0, len(s.tasks))
+		for _, t := range s.tasks {
+			records = append(records, PersistedTask{
+				ID:        t.ID,
+				Config:    t.Config,
+				CreatedAt: t.CreatedAt,
+				UpdatedAt: t.UpdatedAt,
+				Order:     t.Order,
+			})
+		}
+		s.mu.RUnlock()
+		if err := SavePersistedTasks(s.persistPath, records); err != nil {
+			s.logger.Error("persist tasks: %v", err)
+		}
+	}()
 }
