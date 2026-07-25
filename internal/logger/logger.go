@@ -8,8 +8,10 @@ package logger
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"sync/atomic"
 	"time"
 )
 
@@ -27,17 +29,22 @@ type Logger interface {
 	Info(format string, args ...interface{})
 	Error(format string, args ...interface{})
 	Debug(format string, args ...interface{})
+	SetLevel(level Level) // 运行时调整日志级别（热重载用）
 }
 
 // Options configures logger output.
 type Options struct {
 	Prefix string
 	Level  Level
-	Format string // "text" or "json"
+	Format string    // "text" or "json"
+	Output io.Writer // 日志目的地，nil 时默认 os.Stderr
 }
 
 type logger struct {
-	opts Options
+	opts  Options
+	out   io.Writer
+	std   *log.Logger
+	level atomic.Int32
 }
 
 // ParseLevel converts a config string to Level.
@@ -62,11 +69,24 @@ func NewWithOptions(opts Options) Logger {
 	if opts.Format == "" {
 		opts.Format = "text"
 	}
-	return &logger{opts: opts}
+	out := opts.Output
+	if out == nil {
+		out = os.Stderr
+	}
+	l := &logger{
+		opts: opts,
+		out:  out,
+		std:  log.New(out, "", log.LstdFlags),
+	}
+	l.level.Store(int32(opts.Level))
+	return l
 }
 
+// SetLevel updates verbosity at runtime.
+func (l *logger) SetLevel(level Level) { l.level.Store(int32(level)) }
+
 func (l *logger) Info(format string, args ...interface{}) {
-	if l.opts.Level > LevelInfo {
+	if Level(l.level.Load()) > LevelInfo {
 		return
 	}
 	l.write("info", format, args...)
@@ -77,7 +97,7 @@ func (l *logger) Error(format string, args ...interface{}) {
 }
 
 func (l *logger) Debug(format string, args ...interface{}) {
-	if l.opts.Level > LevelDebug {
+	if Level(l.level.Load()) > LevelDebug {
 		return
 	}
 	l.write("debug", format, args...)
@@ -97,14 +117,14 @@ func (l *logger) write(level, format string, args ...interface{}) {
 		}
 		b, err := json.Marshal(entry)
 		if err != nil {
-			log.Printf("[ERROR] logger: %v", err)
+			l.std.Printf("[ERROR] logger: %v", err)
 			return
 		}
-		fmt.Fprintln(os.Stderr, string(b))
+		fmt.Fprintln(l.out, string(b))
 		return
 	}
 
-	log.Printf("[%s] %s", levelUpper(level), msg)
+	l.std.Printf("[%s] %s", levelUpper(level), msg)
 }
 
 func levelUpper(level string) string {

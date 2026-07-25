@@ -8,7 +8,7 @@ package events
 import (
 	"sync"
 
-	"github.com/ZSC714725/transcodemanager/internal/task"
+	"github.com/zkevindev/transcodemanager/internal/task"
 )
 
 const subscriberBuffer = 64

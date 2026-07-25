@@ -6,7 +6,7 @@
 package api
 
 import (
-	"github.com/ZSC714725/transcodemanager/internal/ffmpeg/skills"
+	"github.com/zkevindev/transcodemanager/internal/ffmpeg/skills"
 )
 
 // SkillsResponse for API

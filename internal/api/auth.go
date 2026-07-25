@@ -6,6 +6,7 @@
 package api
 
 import (
+	"crypto/subtle"
 	"net/http"
 	"strings"
 
@@ -13,7 +14,11 @@ import (
 )
 
 // AuthMiddleware validates API key when configured.
-// Skips: static UI, health, metrics, and SSE (supports ?api_key= query).
+// Skips: static UI, health, and metrics.
+// The key is read (in order) from the Authorization: Bearer header, the
+// X-API-Key header, or an ?api_key= query param. The web console sends it as a
+// Bearer header — including for the SSE stream, via a fetch-based reader. The
+// query-param fallback remains for CLI/curl clients that stream with EventSource.
 func AuthMiddleware(apiKey string, metricsPath string) gin.HandlerFunc {
 	if apiKey == "" {
 		return func(c *gin.Context) { c.Next() }
@@ -31,7 +36,8 @@ func AuthMiddleware(apiKey string, metricsPath string) gin.HandlerFunc {
 		}
 
 		key := extractAPIKey(c)
-		if key == apiKey {
+		// Constant-time compare to avoid leaking the key via response timing.
+		if subtle.ConstantTimeCompare([]byte(key), []byte(apiKey)) == 1 {
 			c.Next()
 			return
 		}

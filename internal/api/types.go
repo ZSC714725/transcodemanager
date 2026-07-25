@@ -29,6 +29,7 @@ type ProcessConfigRequest struct {
 	Reconnect      bool                `json:"reconnect"`
 	ReconnectDelay uint64              `json:"reconnect_delay_seconds"`
 	Autostart      bool                `json:"autostart"`
+	StartAt        int64               `json:"start_at"`
 	StaleTimeout   uint64              `json:"stale_timeout_seconds"`
 	Limits         ProcessConfigLimits `json:"limits"`
 }
@@ -56,6 +57,7 @@ type ProcessConfig struct {
 	Reconnect     bool                 `json:"reconnect"`
 	ReconnectDelay uint64             `json:"reconnect_delay_seconds"`
 	Autostart     bool                 `json:"autostart"`
+	StartAt       int64                `json:"start_at"`
 	StaleTimeout  uint64               `json:"stale_timeout_seconds"`
 	Limits        ProcessConfigLimits  `json:"limits"`
 }
@@ -95,6 +97,9 @@ type Progress struct {
 	Drop      uint64  `json:"drop"`
 	Dup       uint64  `json:"dup"`
 	Quantizer float64 `json:"q"`
+	Duration  float64 `json:"duration_seconds"` // 输入总时长；直播为 0
+	Percent   float64 `json:"percent"`          // 完成百分比；仅在已知总时长时 >0
+	ETA       float64 `json:"eta_seconds"`      // 预计剩余秒；仅在已知总时长且有速度时 >0
 }
 
 // ProcessReport for logs

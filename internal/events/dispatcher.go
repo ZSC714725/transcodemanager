@@ -17,9 +17,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ZSC714725/transcodemanager/internal/config"
-	"github.com/ZSC714725/transcodemanager/internal/logger"
-	"github.com/ZSC714725/transcodemanager/internal/task"
+	"github.com/zkevindev/transcodemanager/internal/config"
+	"github.com/zkevindev/transcodemanager/internal/logger"
+	"github.com/zkevindev/transcodemanager/internal/task"
 	"github.com/lithammer/shortuuid/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"

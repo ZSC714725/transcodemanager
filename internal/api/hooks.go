@@ -11,9 +11,10 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ZSC714725/transcodemanager/internal/events"
+	"github.com/zkevindev/transcodemanager/internal/events"
 )
 
 // ListHooks GET /api/v3/hooks
@@ -104,10 +105,25 @@ func (h *Handler) EventStream(c *gin.Context) {
 	_, _ = io.WriteString(c.Writer, ": connected\n\n")
 	flusher.Flush()
 
+	// Push system metrics periodically so the monitor tab needs no HTTP polling.
+	statsTicker := time.NewTicker(systemPushInterval)
+	defer statsTicker.Stop()
+	sendStats := func() {
+		if data, err := json.Marshal(h.collectSystemStats()); err == nil {
+			_, _ = io.WriteString(c.Writer, "event: system\ndata: ")
+			_, _ = c.Writer.Write(data)
+			_, _ = io.WriteString(c.Writer, "\n\n")
+			flusher.Flush()
+		}
+	}
+	sendStats() // prime immediately
+
 	for {
 		select {
 		case <-c.Request.Context().Done():
 			return
+		case <-statsTicker.C:
+			sendStats()
 		case ev, open := <-ch:
 			if !open {
 				return
@@ -123,6 +139,8 @@ func (h *Handler) EventStream(c *gin.Context) {
 		}
 	}
 }
+
+const systemPushInterval = 3 * time.Second
 
 // WebhookRequest for adding runtime webhooks.
 type WebhookRequest struct {

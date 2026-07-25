@@ -22,6 +22,7 @@ type Config struct {
 	Reconnect      bool       `json:"reconnect"`
 	ReconnectDelay uint64     `json:"reconnect_delay_seconds"`
 	Autostart      bool       `json:"autostart"`
+	StartAt        int64      `json:"start_at"` // 定时启动的 Unix 秒；0/过去=不定时
 	StaleTimeout   uint64     `json:"stale_timeout_seconds"`
 	LimitCPU       float64    `json:"limit_cpu_usage"`
 	LimitMemory    uint64     `json:"limit_memory_bytes"`

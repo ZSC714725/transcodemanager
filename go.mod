@@ -1,4 +1,4 @@
-module github.com/ZSC714725/transcodemanager
+module github.com/zkevindev/transcodemanager
 
 go 1.23.0
 
@@ -10,6 +10,7 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/shirou/gopsutil/v3 v3.24.5
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 

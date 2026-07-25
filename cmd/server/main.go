@@ -8,7 +8,9 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,14 +19,51 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ZSC714725/transcodemanager/internal/api"
-	"github.com/ZSC714725/transcodemanager/internal/config"
-	"github.com/ZSC714725/transcodemanager/internal/events"
-	"github.com/ZSC714725/transcodemanager/internal/ffmpeg"
-	"github.com/ZSC714725/transcodemanager/internal/logger"
-	"github.com/ZSC714725/transcodemanager/internal/metrics"
-	"github.com/ZSC714725/transcodemanager/internal/task"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
+
+	"github.com/zkevindev/transcodemanager/internal/api"
+	"github.com/zkevindev/transcodemanager/internal/config"
+	"github.com/zkevindev/transcodemanager/internal/events"
+	"github.com/zkevindev/transcodemanager/internal/ffmpeg"
+	"github.com/zkevindev/transcodemanager/internal/logger"
+	"github.com/zkevindev/transcodemanager/internal/metrics"
+	"github.com/zkevindev/transcodemanager/internal/task"
 )
+
+// buildLogWriter returns the shared log destination. With no file it is stdout;
+// with a file it tees to both stdout and a size-rotated file (via lumberjack),
+// returning a closer for the file handle.
+func buildLogWriter(cfg config.LoggingConfig) (io.Writer, func(), error) {
+	if cfg.File == "" {
+		return os.Stdout, func() {}, nil
+	}
+	if dir := filepath.Dir(cfg.File); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return nil, nil, err
+		}
+	}
+	lj := &lumberjack.Logger{
+		Filename:   cfg.File,
+		MaxSize:    cfg.MaxSizeMB,  // MB before rotation
+		MaxBackups: cfg.MaxBackups, // number of old files to keep
+		MaxAge:     cfg.MaxAgeDays, // days; 0 = no age-based cleanup
+		Compress:   cfg.Compress,
+	}
+	return io.MultiWriter(os.Stdout, lj), func() { _ = lj.Close() }, nil
+}
+
+func toAPIPresets(in []config.PresetConfig) []api.Preset {
+	out := make([]api.Preset, 0, len(in))
+	for _, p := range in {
+		out = append(out, api.Preset{
+			Name:          p.Name,
+			Description:   p.Description,
+			InputOptions:  p.InputOptions,
+			OutputOptions: p.OutputOptions,
+		})
+	}
+	return out
+}
 
 func main() {
 	configPath := flag.String("config", "", "Path to YAML config file")
@@ -50,15 +89,47 @@ func main() {
 		ffmpegPath = *ffmpegBin
 	}
 
+	// One shared destination for everything: the service's own logs, gin's access
+	// log, gin's startup/route output, and any stray standard-library log calls.
+	logOut, closeLog, err := buildLogWriter(cfg.Logging)
+	if err != nil {
+		log.Fatalf("open log file: %v", err)
+	}
+	defer closeLog()
+	log.SetOutput(logOut)
+	gin.DefaultWriter = logOut
+	gin.DefaultErrorWriter = logOut
+
 	appLog := logger.NewWithOptions(logger.Options{
 		Prefix: "transcodemanager: ",
 		Level:  logger.ParseLevel(cfg.Logging.Level),
 		Format: cfg.Logging.Format,
+		Output: logOut,
 	})
 
+	// Address filters constrain what ffmpeg may read/write, mitigating arbitrary
+	// file access and SSRF from the task API.
+	valIn, err := ffmpeg.NewValidator(cfg.FFmpeg.AllowInput, cfg.FFmpeg.BlockInput)
+	if err != nil {
+		log.Fatalf("invalid input address filter: %v", err)
+	}
+	valOut, err := ffmpeg.NewValidator(cfg.FFmpeg.AllowOutput, cfg.FFmpeg.BlockOutput)
+	if err != nil {
+		log.Fatalf("invalid output address filter: %v", err)
+	}
+
+	if cfg.Observability.TaskLogDir != "" {
+		if err := os.MkdirAll(cfg.Observability.TaskLogDir, 0o755); err != nil {
+			log.Fatalf("create task log dir: %v", err)
+		}
+	}
+
 	ff, err := ffmpeg.New(ffmpeg.Config{
-		Binary:      ffmpegPath,
-		MaxLogLines: cfg.Observability.MaxLogLines,
+		Binary:          ffmpegPath,
+		MaxLogLines:     cfg.Observability.MaxLogLines,
+		ValidatorInput:  valIn,
+		ValidatorOutput: valOut,
+		TaskLogDir:      cfg.Observability.TaskLogDir,
 	})
 	if err != nil {
 		log.Fatalf("FFmpeg init: %v", err)
@@ -75,18 +146,45 @@ func main() {
 	observers = append(observers, dispatcher)
 
 	store := task.NewStore(ff, appLog, task.NewCompositeObserver(observers...), task.StoreOptions{
-		PersistPath: cfg.Observability.PersistPath,
+		PersistPath:   cfg.Observability.PersistPath,
+		MaxConcurrent: cfg.Server.MaxConcurrentTasks,
 	})
 	if m != nil {
 		m.BindStore(store)
 	}
 
 	handler := api.NewHandler(store, ff, appLog, dispatcher)
+	handler.SetPresets(toAPIPresets(cfg.Presets))
 
-	r := gin.Default()
+	// SIGHUP hot-reloads the safely-mutable settings from the config file:
+	// log level, presets, and the concurrency cap. (bind/gin_mode/log file still
+	// require a restart.)
+	if *configPath != "" {
+		hup := make(chan os.Signal, 1)
+		signal.Notify(hup, syscall.SIGHUP)
+		go func() {
+			for range hup {
+				newCfg, err := config.Load(*configPath)
+				if err != nil {
+					appLog.Error("reload config: %v", err)
+					continue
+				}
+				appLog.SetLevel(logger.ParseLevel(newCfg.Logging.Level))
+				store.SetMaxConcurrent(newCfg.Server.MaxConcurrentTasks)
+				handler.SetPresets(toAPIPresets(newCfg.Presets))
+				appLog.Info("config reloaded (log level, presets, max_concurrent_tasks)")
+			}
+		}()
+	}
+
+	gin.SetMode(cfg.Server.GinMode)
+	// gin.New() (not Default) so Logger and Recovery are attached exactly once.
+	r := gin.New()
 	middlewares := []gin.HandlerFunc{
+		gin.Logger(),
 		gin.Recovery(),
 		api.CORSMiddleware(cfg.Server.CORS),
+		api.RateLimit(cfg.Server.RateLimit, cfg.Server.RateLimitBurst), // before auth, to blunt key brute-force
 		api.AuthMiddleware(cfg.Server.APIKey, cfg.Observability.MetricsPath),
 		api.RequestID(),
 	}
@@ -116,21 +214,34 @@ func main() {
 		v3.DELETE("/hooks/webhook/:id", handler.DeleteWebhook)
 		v3.GET("/events/stream", handler.EventStream)
 
+		v3.GET("/system/stats", handler.SystemStats)
+		v3.GET("/presets", handler.ListPresets)
+
 		v3.GET("/process/summary", handler.ProcessSummary)
 		v3.GET("/process", handler.ListProcesses)
 		v3.POST("/process", handler.AddProcess)
+		v3.POST("/process/batch", handler.BatchCommand)
+		v3.DELETE("/process/cleanup", handler.Cleanup)
 		v3.GET("/process/:id", handler.GetProcess)
 		v3.PUT("/process/:id", handler.UpdateProcess)
 		v3.DELETE("/process/:id", handler.DeleteProcess)
 		v3.GET("/process/:id/config", handler.GetConfig)
 		v3.GET("/process/:id/state", handler.GetState)
 		v3.GET("/process/:id/report", handler.GetReport)
+		v3.GET("/process/:id/report/download", handler.DownloadReport)
 		v3.PUT("/process/:id/command", handler.Command)
 	}
 
+	// baseCtx is the parent of every request context. Cancelling it on shutdown
+	// unblocks long-lived handlers (the SSE event stream) so Shutdown can drain
+	// immediately instead of waiting out its timeout.
+	baseCtx, cancelBase := context.WithCancel(context.Background())
+	defer cancelBase()
+
 	srv := &http.Server{
-		Addr:    bindAddr,
-		Handler: r,
+		Addr:        bindAddr,
+		Handler:     r,
+		BaseContext: func(net.Listener) context.Context { return baseCtx },
 	}
 
 	go func() {
@@ -149,6 +260,9 @@ func main() {
 	if err := store.Flush(); err != nil {
 		appLog.Error("flush tasks: %v", err)
 	}
+
+	// End in-flight streaming handlers (SSE) before draining connections.
+	cancelBase()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

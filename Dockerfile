@@ -23,11 +23,17 @@ WORKDIR /app
 ENV GIN_MODE=release
 
 # HTTPS 拉流所需 CA 证书；wget 用于 HEALTHCHECK
-RUN apk add --no-cache ca-certificates wget
+RUN apk add --no-cache ca-certificates wget \
+ && addgroup -S tm && adduser -S -G tm -H tm
 
 COPY --from=builder /build/transcodemanager .
 COPY --from=builder /build/web ./web
 COPY --from=builder /build/config.yaml .
+
+# 以非 root 运行；预建并授权数据/日志目录
+RUN mkdir -p /app/data /app/logs \
+ && chown -R tm:tm /app
+USER tm
 
 EXPOSE 8080
 

@@ -11,11 +11,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ZSC714725/transcodemanager/internal/events"
-	"github.com/ZSC714725/transcodemanager/internal/ffmpeg"
-	"github.com/ZSC714725/transcodemanager/internal/logger"
-	"github.com/ZSC714725/transcodemanager/internal/process"
-	"github.com/ZSC714725/transcodemanager/internal/task"
+	"github.com/zkevindev/transcodemanager/internal/events"
+	"github.com/zkevindev/transcodemanager/internal/ffmpeg"
+	"github.com/zkevindev/transcodemanager/internal/logger"
+	"github.com/zkevindev/transcodemanager/internal/process"
+	"github.com/zkevindev/transcodemanager/internal/task"
 )
 
 // Handler holds dependencies
@@ -24,11 +24,13 @@ type Handler struct {
 	ffmpeg     ffmpeg.FFmpeg
 	log        logger.Logger
 	dispatcher *events.Dispatcher
+	system     *systemCollector
+	presets    []Preset
 }
 
 // NewHandler creates API handler
 func NewHandler(store task.Store, ff ffmpeg.FFmpeg, log logger.Logger, dispatcher *events.Dispatcher) *Handler {
-	return &Handler{store: store, ffmpeg: ff, log: log, dispatcher: dispatcher}
+	return &Handler{store: store, ffmpeg: ff, log: log, dispatcher: dispatcher, system: newSystemCollector()}
 }
 
 func (h *Handler) errResp(c *gin.Context, code int, msg, detail string) {
@@ -74,6 +76,8 @@ func (h *Handler) AddProcess(c *gin.Context) {
 }
 
 // ListProcesses GET /api/v3/process
+// Optional query params: sort (created_at|updated_at|reference|state), order (asc|desc),
+// limit, offset. Defaults to newest-first; response stays a JSON array for compatibility.
 func (h *Handler) ListProcesses(c *gin.Context) {
 	filter := c.DefaultQuery("filter", "")
 	reference := c.DefaultQuery("reference", "")
@@ -88,8 +92,21 @@ func (h *Handler) ListProcesses(c *gin.Context) {
 	}
 
 	tasks := h.store.List(ids, reference)
-	procs := make([]Process, 0, len(tasks))
+	sortTasks(tasks, c.DefaultQuery("sort", "created_at"), c.DefaultQuery("order", "desc"))
 
+	// Optional pagination (opt-in: absent params return the full list).
+	if offset := atoiDefault(c.Query("offset"), 0); offset > 0 {
+		if offset >= len(tasks) {
+			tasks = nil
+		} else {
+			tasks = tasks[offset:]
+		}
+	}
+	if limit := atoiDefault(c.Query("limit"), 0); limit > 0 && limit < len(tasks) {
+		tasks = tasks[:limit]
+	}
+
+	procs := make([]Process, 0, len(tasks))
 	for _, t := range tasks {
 		p := taskToProcess(t, filter)
 		procs = append(procs, p)
@@ -218,6 +235,18 @@ func buildProcessState(t *task.Task, status process.Status) ProcessState {
 	}
 
 	prog := t.Progress()
+	percent, eta := 0.0, 0.0
+	if prog.Duration > 0 && prog.Time > 0 {
+		percent = prog.Time / prog.Duration * 100
+		if percent > 100 {
+			percent = 100
+		}
+		if prog.Speed > 0 {
+			if remaining := prog.Duration - prog.Time; remaining > 0 {
+				eta = remaining / prog.Speed
+			}
+		}
+	}
 	state.Progress = &Progress{
 		Frame:     prog.Frame,
 		Size:      prog.Size,
@@ -226,6 +255,9 @@ func buildProcessState(t *task.Task, status process.Status) ProcessState {
 		Drop:      prog.Drop,
 		Dup:       prog.Dup,
 		Quantizer: prog.Quantizer,
+		Duration:  prog.Duration,
+		Percent:   percent,
+		ETA:       eta,
 	}
 
 	return state
@@ -279,6 +311,10 @@ func (h *Handler) Command(c *gin.Context) {
 	}
 
 	if err != nil {
+		if err == task.ErrConcurrencyLimit {
+			h.errResp(c, http.StatusTooManyRequests, "Concurrency limit reached", err.Error())
+			return
+		}
 		h.errResp(c, http.StatusBadRequest, "Command failed", err.Error())
 		return
 	}
@@ -310,6 +346,7 @@ func requestToConfig(req *ProcessConfigRequest) *task.Config {
 		Reconnect:      req.Reconnect,
 		ReconnectDelay: req.ReconnectDelay,
 		Autostart:      req.Autostart,
+		StartAt:        req.StartAt,
 		StaleTimeout:   req.StaleTimeout,
 		LimitCPU:       req.Limits.CPU,
 		LimitMemory:    req.Limits.Memory * 1024 * 1024,
@@ -335,6 +372,7 @@ func taskToProcessConfig(t *task.Task) *ProcessConfig {
 		Reconnect:       t.Config.Reconnect,
 		ReconnectDelay:  t.Config.ReconnectDelay,
 		Autostart:       t.Config.Autostart,
+		StartAt:         t.Config.StartAt,
 		StaleTimeout:    t.Config.StaleTimeout,
 		Limits: ProcessConfigLimits{
 			CPU:     t.Config.LimitCPU,

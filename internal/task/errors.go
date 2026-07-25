@@ -13,4 +13,5 @@ var (
 	ErrInvalidConfig        = errors.New("invalid config: need at least one input and one output")
 	ErrInvalidInputAddress  = errors.New("invalid input address")
 	ErrInvalidOutputAddress = errors.New("invalid output address")
+	ErrConcurrencyLimit     = errors.New("concurrent running task limit reached")
 )

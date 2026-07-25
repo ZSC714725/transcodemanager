@@ -8,13 +8,14 @@ package ffmpeg
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/ZSC714725/transcodemanager/internal/ffmpeg/parse"
-	"github.com/ZSC714725/transcodemanager/internal/ffmpeg/skills"
-	"github.com/ZSC714725/transcodemanager/internal/logger"
-	"github.com/ZSC714725/transcodemanager/internal/process"
+	"github.com/zkevindev/transcodemanager/internal/ffmpeg/parse"
+	"github.com/zkevindev/transcodemanager/internal/ffmpeg/skills"
+	"github.com/zkevindev/transcodemanager/internal/logger"
+	"github.com/zkevindev/transcodemanager/internal/process"
 )
 
 // FFmpeg manages FFmpeg binary and skills
@@ -47,6 +48,7 @@ type Config struct {
 	MaxLogLines      int
 	ValidatorInput   Validator
 	ValidatorOutput  Validator
+	TaskLogDir       string
 }
 
 type ffmpeg struct {
@@ -55,6 +57,7 @@ type ffmpeg struct {
 	validatorOut Validator
 	skills      skills.Skills
 	logLines    int
+	taskLogDir  string
 	skillsLock  sync.RWMutex
 }
 
@@ -68,6 +71,7 @@ func New(config Config) (FFmpeg, error) {
 	f := &ffmpeg{
 		binary:      binary,
 		logLines:    config.MaxLogLines,
+		taskLogDir:  config.TaskLogDir,
 	}
 
 	if f.logLines <= 0 {
@@ -111,7 +115,11 @@ func (f *ffmpeg) New(config ProcessConfig) (process.Process, error) {
 }
 
 func (f *ffmpeg) NewParser(log logger.Logger, id, ref string) parse.Parser {
-	return parse.New(parse.Config{LogLines: f.logLines})
+	cfg := parse.Config{LogLines: f.logLines}
+	if f.taskLogDir != "" {
+		cfg.File = filepath.Join(f.taskLogDir, id+".log")
+	}
+	return parse.New(cfg)
 }
 
 func (f *ffmpeg) ValidateInput(address string) bool {

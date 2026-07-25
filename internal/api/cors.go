@@ -10,7 +10,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/ZSC714725/transcodemanager/internal/config"
+	"github.com/zkevindev/transcodemanager/internal/config"
 )
 
 // CORSMiddleware returns CORS handler. Empty allowed_origins allows all (dev default).

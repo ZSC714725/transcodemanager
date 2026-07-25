@@ -2,6 +2,10 @@
 
 server:
   bind: "0.0.0.0:8080"
+  gin_mode: "release"            # debug / release / test；release 关闭路由 dump 与调试噪音
+  max_concurrent_tasks: 0        # 同时运行的任务上限，0=不限；超限时启动返回 429
+  rate_limit: 0                  # 每 IP 每秒请求上限，0=不限
+  # rate_limit_burst: 20         # 令牌桶突发容量，默认 2×rate_limit
   # api_key: "your-secret-key"   # 非空时启用 Bearer / X-API-Key / ?api_key= 鉴权
   # cors:
   #   allowed_origins:
@@ -11,16 +15,46 @@ server:
 
 ffmpeg:
   path: "ffmpeg"
+  # 地址白/黑名单（正则）。留空=全部允许。block 优先于 allow。强烈建议生产环境限制，
+  # 否则任何有 API 权限者可让 ffmpeg 读写任意文件或访问内网（SSRF）。
+  # allow_input:
+  #   - "^rtmp://"
+  #   - "^https?://"
+  # block_input:
+  #   - "^file:"                 # 禁止读本地文件
+  #   - "127\\.0\\.0\\.1|169\\.254|10\\.|192\\.168"   # 禁止内网/元数据地址
+  # allow_output:
+  #   - "^rtmp://"
+  # block_output:
+  #   - "^/|^file:"              # 禁止写本地绝对路径
 
 logging:
   level: "info"
   format: "text"
+  # file: "logs/transcodemanager.log"   # 配置后：服务日志 + gin 访问/启动日志同时写入该文件和 stdout；留空则仅 stdout
+  max_size_mb: 100               # 单文件达到该大小后轮转
+  max_backups: 7                 # 保留旧日志份数
+  max_age_days: 0                # 旧日志保留天数，0=不按天清理
+  compress: false                # 轮转后是否 gzip
 
 observability:
   max_log_lines: 100
   metrics_enabled: true
   metrics_path: "/metrics"
   persist_path: "data/tasks.json"   # 任务持久化，重启后恢复（不自动启动）
+  # task_log_dir: "data/task-logs"  # 每个任务日志落盘到 <dir>/<id>.log；可经 /report/download 下载
+
+# 转码预设模板（前端「输出目标」可一键套用）
+presets:
+  - name: "H.264 720p"
+    description: "libx264 + AAC，缩放到 720p"
+    output_options: ["-c:v", "libx264", "-preset", "veryfast", "-vf", "scale=-2:720", "-c:a", "aac", "-b:a", "128k"]
+  - name: "H.264 直推 flv"
+    description: "转封装/转码为 RTMP flv"
+    output_options: ["-c:v", "libx264", "-preset", "veryfast", "-c:a", "aac", "-f", "flv"]
+  - name: "仅转封装 copy"
+    description: "不重编码，直接拷贝音视频流"
+    output_options: ["-c", "copy"]
 
 hooks:
   sse_enabled: true
